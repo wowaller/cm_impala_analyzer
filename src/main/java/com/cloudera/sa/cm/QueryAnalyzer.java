@@ -136,17 +136,18 @@ public class QueryAnalyzer {
                             LOGGER.debug(source);
                         }
                     }
+
+                    if(LOGGER.isDebugEnabled()) {
+                        LOGGER.debug("Target Tables====");
+                    }
+                    for(String target : node.getTarget()) {
+                        if(LOGGER.isDebugEnabled()) {
+                            LOGGER.debug(target);
+                        }
+                        allQueries.put(target, node);
+                    }
                 }
 
-                if(LOGGER.isDebugEnabled()) {
-                    LOGGER.debug("Target Tables====");
-                }
-                for(String target : node.getTarget()) {
-                    if(LOGGER.isDebugEnabled()) {
-                        LOGGER.debug(target);
-                    }
-                    allQueries.put(target, node);
-                }
             } catch (Exception e) {
                 LOGGER.error("Failed to parse SQL: " + query.getStatement(), e);
                 e.printStackTrace();
