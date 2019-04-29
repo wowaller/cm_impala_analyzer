@@ -123,7 +123,7 @@ public class QueryBase {
             source.remove(target);
         } else if (stmt instanceof InsertStmt) {
             InsertStmt insertStmt = (InsertStmt) stmt;
-            target.add(insertStmt.getTargetTable().toString());
+            target.add(insertStmt.getTargetTableName().toString());
             parseImpalaQuery(insertStmt.getQueryStmt());
         } else {
             // We do not really care about rest
