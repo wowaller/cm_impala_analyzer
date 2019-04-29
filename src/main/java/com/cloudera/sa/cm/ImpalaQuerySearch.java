@@ -48,6 +48,9 @@ public class ImpalaQuerySearch {
         this.password = password;
         this.username = username;
 
+        this.isSSLEnabled = isSSLEnabled;
+        this.pemPath = pemPath;
+
         cmClient = getCMClient(host, port, version, username, password, isSSLEnabled, pemPath);
     }
 
@@ -124,6 +127,7 @@ public class ImpalaQuerySearch {
         String baseUrl = getBaseUrl(host, port, version, false);
 
         HttpGet get = new HttpGet(baseUrl + "/clusters/" + clusterName + "/services/" + serviceName + "/impalaQueries/" + queryId);
+        get.addHeader("Authorization", authHeader);
 
         String responseContent = null;
         CloseableHttpResponse response = null;
