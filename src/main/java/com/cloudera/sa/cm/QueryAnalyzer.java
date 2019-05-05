@@ -267,14 +267,13 @@ public class QueryAnalyzer {
         Properties props = new Properties();
         props.load(new FileInputStream(args[0]));
 
-        DefaultTaskReader reader = new DefaultTaskReader(args[1]);
-        BufferedWriter writer = new BufferedWriter(new FileWriter(args[2]));
-
         boolean ignoreDB = Boolean.parseBoolean(props.getProperty(IGNORE_DB_NAME, DEFAULT_IGNORE_DB_NAME));
 
         QueryAnalyzer analyzer = new QueryAnalyzer(props);
-//        Map<String, QueryBase> allNodes = analyzer.getQueries();
+        Map<String, QueryBase> allNodes = analyzer.getQueries();
 
+        DefaultTaskReader reader = new DefaultTaskReader(args[1]);
+        BufferedWriter writer = new BufferedWriter(new FileWriter(args[2]));
 //        String line;
 
         LOGGER.info("Finished collecting queryies. Trying to search jobs.");
@@ -282,10 +281,10 @@ public class QueryAnalyzer {
         while(reader.hasNext()) {
 //            String[] split = line.split(DEFAULT_INPUT_SPLIT);
 //            String id = split[0];
-//            LOGGER.info("Searching for query:" + id);
 //            Set<String> targetTbls = new HashSet<>(Arrays.asList(split[1].split(DEFAULT_EXCLUDE_TBL_LIST_DELIMITER)));
 //            Set<String> sourceTbls = new HashSet<>(Arrays.asList(split[2].split(DEFAULT_EXCLUDE_TBL_LIST_DELIMITER)));
             String id = reader.next();
+            LOGGER.info("Searching for query:" + id);
             SearchTask task = new SearchTask(id, reader.nextTargets(), reader.nextSources(), ignoreDB);
             List<QueryBase> job = task.findSqlWfs(analyzer.getAllQueries(), analyzer.getExclude());
 

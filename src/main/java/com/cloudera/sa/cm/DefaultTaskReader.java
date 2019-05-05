@@ -60,7 +60,7 @@ public class DefaultTaskReader {
     private void parseLine(String line) {
         String[] split = line.split(DEFAULT_INPUT_SPLIT);
         String id = split[0];
-        LOGGER.info("Searching for query:" + id);
+        LOGGER.info("Reading task: " + id);
         Set<String> targetTbls = new HashSet<>(Arrays.asList(split[1].split(DEFAULT_EXCLUDE_TBL_LIST_DELIMITER)));
         Set<String> sourceTbls = new HashSet<>(Arrays.asList(split[2].split(DEFAULT_EXCLUDE_TBL_LIST_DELIMITER)));
         if(srcTbls.containsKey(id)) {
