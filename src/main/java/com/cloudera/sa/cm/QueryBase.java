@@ -34,20 +34,10 @@ public class QueryBase {
     private String statement;
     private double duration;
     private double memory;
+    private double admissionWait;
 
-    public static String parseStatementFromDetail(ApiImpalaQueryDetailsResponse detail) {
-        String impalaSqlExtractionPattern = ".*Sql Statement:(.*)Coordinator:.*";
-        Pattern p = Pattern.compile(impalaSqlExtractionPattern);
-        Matcher m = p.matcher(detail.getDetails().replaceAll("[\r\n]", " "));
 
-        if(m.find()) {
-            return m.group(1);
-        } else {
-            return null;
-        }
-    }
-
-    public QueryBase(String statement, double duration, double admission_wait, double memory, boolean ignoreDb) throws Exception {
+    public QueryBase(String statement, double duration, double admissionWait, double memory) throws Exception {
 
         source = new HashSet<>();
         target = new HashSet<>();
@@ -56,6 +46,7 @@ public class QueryBase {
         this.duration = duration;
         this.memory = memory;
         this.statement = statement;
+        this.admissionWait = admissionWait;
 
         parseImpala(statement.toLowerCase());
     }
@@ -86,7 +77,6 @@ public class QueryBase {
     private void parseJSQL(String statement) throws SemanticException, ParserException, JSQLParserException {
         Statement stmt = CCJSqlParserUtil.parse(statement);
 
-        List<String> tables;
 
         if (stmt instanceof Select) {
             Select selectStatement = (Select) stmt;
@@ -225,5 +215,13 @@ public class QueryBase {
 
     public void setMemory(double memory) {
         this.memory = memory;
+    }
+
+    public double getAdmissionWait() {
+        return admissionWait;
+    }
+
+    public void setAdmissionWait(double admissionWait) {
+        this.admissionWait = admissionWait;
     }
 }

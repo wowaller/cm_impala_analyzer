@@ -53,7 +53,6 @@ public class QueryAnalyzer {
     private String from;
     private String to;
     private String filter;
-    private boolean ignoreDB;
 
     private Map<String, QueryBase> allQueries;
 
@@ -76,7 +75,6 @@ public class QueryAnalyzer {
         from = props.getProperty(QUERY_START_TIME);
         to = props.getProperty(QUERY_END_TIME);
         filter = props.getProperty(QUERY_FILTER, DEFAULT_QUERY_FILTER);
-        ignoreDB = Boolean.parseBoolean(props.getProperty(IGNORE_DB_NAME, DEFAULT_IGNORE_DB_NAME));
         String excludeString = props.getProperty(EXCLUDE_TBL_LIST);
 
         allQueries = new HashMap<>();
@@ -121,7 +119,7 @@ public class QueryAnalyzer {
                 LOGGER.info("Query too long for cm. Checking details for query " + query.getQueryId());
                 try {
                     ApiImpalaQueryDetailsResponse detail = client.queryDetailThroughHTTP(clusterName, serviceName, query.getQueryId());
-                    statement = QueryBase.parseStatementFromDetail(detail);
+                    statement = QueryAnalyzeUtil.parseStatementFromDetail(detail);
                 } catch (Exception e) {
                     LOGGER.error("Failed to get query details for id " + query.getQueryId(), e);
                     continue;
@@ -133,7 +131,7 @@ public class QueryAnalyzer {
             }
 
             try {
-                QueryBase node = new QueryBase(statement, duration, admissionWait, memGB, ignoreDB);
+                QueryBase node = new QueryBase(statement, duration, admissionWait, memGB);
 
                 if(!node.getSource().isEmpty() && !node.getTarget().isEmpty()) {
                     if(LOGGER.isDebugEnabled()) {
@@ -150,7 +148,10 @@ public class QueryAnalyzer {
                         if(LOGGER.isDebugEnabled()) {
                             LOGGER.debug(target);
                         }
-                        allQueries.put(target, node);
+                        if(!allQueries.containsKey(target)) {
+                            // We keep the latest SQL if duplicates found.
+                            allQueries.put(target, node);
+                        }
                     }
                 }
 
@@ -162,8 +163,6 @@ public class QueryAnalyzer {
         }
         return allQueries;
     }
-
-
 
     public String getHost() {
         return host;
@@ -271,6 +270,8 @@ public class QueryAnalyzer {
         DefaultTaskReader reader = new DefaultTaskReader(args[1]);
         BufferedWriter writer = new BufferedWriter(new FileWriter(args[2]));
 
+        boolean ignoreDB = Boolean.parseBoolean(props.getProperty(IGNORE_DB_NAME, DEFAULT_IGNORE_DB_NAME));
+
         QueryAnalyzer analyzer = new QueryAnalyzer(props);
 //        Map<String, QueryBase> allNodes = analyzer.getQueries();
 
@@ -278,15 +279,14 @@ public class QueryAnalyzer {
 
         LOGGER.info("Finished collecting queryies. Trying to search jobs.");
 
-
-
         while(reader.hasNext()) {
 //            String[] split = line.split(DEFAULT_INPUT_SPLIT);
 //            String id = split[0];
 //            LOGGER.info("Searching for query:" + id);
 //            Set<String> targetTbls = new HashSet<>(Arrays.asList(split[1].split(DEFAULT_EXCLUDE_TBL_LIST_DELIMITER)));
 //            Set<String> sourceTbls = new HashSet<>(Arrays.asList(split[2].split(DEFAULT_EXCLUDE_TBL_LIST_DELIMITER)));
-            SearchTask task = reader.nextTask();
+            String id = reader.next();
+            SearchTask task = new SearchTask(id, reader.nextTargets(), reader.nextSources(), ignoreDB);
             List<QueryBase> job = task.findSqlWfs(analyzer.getAllQueries(), analyzer.getExclude());
 
 //            String queryMostMem = "";

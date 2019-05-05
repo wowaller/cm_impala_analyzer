@@ -20,6 +20,7 @@ public class DefaultTaskReader {
     private Map<String, Set<String>> srcTbls;
     private Map<String, Set<String>> tarTbls;
     private Iterator<String> keyItr;
+    private String current;
 
     public DefaultTaskReader(String input) throws IOException {
         this.input = input;
@@ -43,9 +44,17 @@ public class DefaultTaskReader {
         return keyItr.hasNext();
     }
 
-    public SearchTask nextTask() {
-        String id = keyItr.next();
-        return new SearchTask(id, tarTbls.get(id), srcTbls.get(id));
+    public String next() {
+       current = keyItr.next();
+       return current;
+    }
+
+    public Set<String> nextSources() {
+        return srcTbls.get(current);
+    }
+
+    public Set<String> nextTargets() {
+        return tarTbls.get(current);
     }
 
     private void parseLine(String line) {

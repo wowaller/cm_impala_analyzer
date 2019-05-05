@@ -14,37 +14,39 @@ public class SearchTask {
     private Set<String> sourceTbls;
     private Map<String, QueryBase> found;
     private LinkedList<String> tableToScan;
+    private boolean ignoreSrcDb;
 
-    public SearchTask(String id, Set<String> targetTbls, Set<String> sourceTbls) {
+    public SearchTask(String id, Set<String> targetTbls, Set<String> sourceTbls, boolean ignoreSrcDb) {
         this.id = id;
         this.targetTbls = targetTbls;
         this.sourceTbls = sourceTbls;
         this.found = new HashMap<>();
         this.tableToScan = new LinkedList<>();
+        this.ignoreSrcDb = ignoreSrcDb;
     }
 
 
     public List<QueryBase> findSqlDfs(Map<String, QueryBase> allQueries, Set<String> exclude) {
         for(String target : targetTbls) {
-            QueryBase current = allQueries.get(target);
-            if(current != null && !exclude.contains(current)
-                    && !found.containsKey(current) && !sourceTbls.contains(current)) {
+            if(allQueries.containsKey(target) && !exclude.contains(target)
+                    && !found.containsKey(target) && !inSrc(target)) {
+                QueryBase current = allQueries.get(target);
                 found.put(target, current);
-                dfsTraverse(current, sourceTbls, found, allQueries, exclude);
+                dfsTraverse(current, found, allQueries, exclude);
             }
         }
         return new ArrayList<>(found.values());
     }
 
-    public void dfsTraverse(QueryBase current, Set<String> stopTbls, Map<String, QueryBase> found,
+    public void dfsTraverse(QueryBase current, Map<String, QueryBase> found,
                             Map<String, QueryBase> allQueries, Set<String> exclude) {
         for(String dependency : current.getSource()) {
             // The dependency is not seen yet and it's not the end of search.
             if(allQueries.containsKey(dependency) && !exclude.contains(dependency)
-                    && !found.containsKey(dependency) && !stopTbls.contains(dependency)) {
+                    && !found.containsKey(dependency) && !inSrc(dependency)) {
                 QueryBase value = allQueries.get(dependency);
                 found.put(dependency, value);
-                dfsTraverse(value, stopTbls, found, allQueries, exclude);
+                dfsTraverse(value, found, allQueries, exclude);
             }
         }
     }
@@ -58,7 +60,7 @@ public class SearchTask {
             String current = tableToScan.pop();
 
             if(allQueries.containsKey(current) && !exclude.contains(current)
-                    && !found.containsKey(current) && !sourceTbls.contains(current)) {
+                    && !found.containsKey(current) && inSrc(current)) {
                 QueryBase value = allQueries.get(current);
                 found.put(current, value);
                 for(String dependency : value.getSource()) {
@@ -67,6 +69,19 @@ public class SearchTask {
             }
         }
         return new ArrayList<>(found.values());
+    }
+
+    public boolean inSrc(String tbl) {
+        if(!ignoreSrcDb) {
+            return sourceTbls.contains(tbl);
+        } else {
+            for(String src : sourceTbls) {
+                if(src.equalsIgnoreCase(tbl)) {
+                    return true;
+                }
+            }
+            return false;
+        }
     }
 
     public String getCSVResult() {
