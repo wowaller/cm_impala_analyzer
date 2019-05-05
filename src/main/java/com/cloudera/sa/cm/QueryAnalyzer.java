@@ -90,7 +90,10 @@ public class QueryAnalyzer {
         ApiImpalaQuery query;
         while((query = result.nextQuery()) != null) {
             count += 1;
-            LOGGER.info("Retriving record count=" + count);
+
+            if (LOGGER.isDebugEnabled()) {
+                LOGGER.debug("Retriving record count=" + count);
+            }
 
             String mem = query.getAttributes().get("memory_per_node_peak");
             BigDecimal durationMS = query.getDurationMillis();
@@ -296,6 +299,8 @@ public class QueryAnalyzer {
             System.exit(1);
         }
 
+        LOGGER.info("Starting to collect query information from CM.");
+
         Properties props = new Properties();
         props.load(new FileInputStream(args[0]));
 
@@ -306,21 +311,48 @@ public class QueryAnalyzer {
 
         String line;
 
+        LOGGER.info("Finished collecting queryies. Trying to search jobs.");
+
         while((line = reader.readLine()) != null) {
             String[] split = line.split(DEFAULT_INPUT_SPLIT);
             String id = split[0];
+            LOGGER.info("Searching for query:" + id);
             Set<String> targetTbls = new HashSet<>(Arrays.asList(split[1].split(DEFAULT_EXCLUDE_TBL_LIST_DELIMITER)));
             Set<String> sourceTbls = new HashSet<>(Arrays.asList(split[2].split(DEFAULT_EXCLUDE_TBL_LIST_DELIMITER)));
             List<QueryBase> job = analyzer.findSqlWfs(targetTbls, sourceTbls);
 
+            String queryMostMem = "";
+            String queryLongest = "";
+
             double maxMem = 0;
+            double maxDuration = 0;
             double totalDuration = 0;
             for (QueryBase query : job) {
-                System.out.println(query.getStatement());
-                maxMem = Math.max(maxMem, query.getMemory());
+                if (LOGGER.isDebugEnabled()) {
+                    LOGGER.debug(query.getStatement());
+                }
+
+                if(query.getMemory() > maxMem) {
+                    maxMem = query.getMemory();
+                    queryMostMem = query.getStatement();
+                }
+
+                if(query.getDuration() > maxDuration) {
+                    maxDuration = query.getDuration();
+                    queryLongest = query.getStatement();
+                }
+
+//                System.out.println(query.getStatement());
                 totalDuration += query.getDuration();
             }
+            LOGGER.info("====ID : " + id + ", Mem : " + maxMem + "G, Duration : " + totalDuration);
             System.out.println("====ID : " + id + ", Mem : " + maxMem + "G, Duration : " + totalDuration);
+            if (LOGGER.isDebugEnabled()) {
+                LOGGER.debug("Longest query: " + queryLongest);
+                LOGGER.debug("Query with largest memory: " + queryMostMem);
+
+            }
+
         }
     }
 }

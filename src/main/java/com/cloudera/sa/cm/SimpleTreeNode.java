@@ -7,7 +7,7 @@ import java.util.List;
 
 public class SimpleTreeNode<T> {
 
-    private SimpleTreeNode parent;
+    private SimpleTreeNode<T> parent;
     private T value;
     private List<SimpleTreeNode<T>> children;
 

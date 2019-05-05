@@ -1,0 +1,2 @@
+1. Query order: the oldest table with same target table will be kept rather than latest.
+2. File input/output format needs to be confirmed.
