@@ -34,6 +34,8 @@ public class QueryAnalyzer {
     public static final String DEFAULT_EXCLUDE_TBL_LIST_DELIMITER = ",";
     public static final String IGNORE_DB_NAME = "ignore_db";
     public static final String DEFAULT_IGNORE_DB_NAME = "false";
+    public static final String SKIP_INPUT_HEADER = "skip_header";
+    public static final String DEFAULT_SKIP_INPUT_HEADER = "false";
 
     public static final String DEFAULT_INPUT_SPLIT = "\\|";
 
@@ -273,11 +275,12 @@ public class QueryAnalyzer {
         props.load(new FileInputStream(args[0]));
 
         boolean ignoreDB = Boolean.parseBoolean(props.getProperty(IGNORE_DB_NAME, DEFAULT_IGNORE_DB_NAME));
+        boolean skipHeader = Boolean.parseBoolean(props.getProperty(SKIP_INPUT_HEADER, DEFAULT_SKIP_INPUT_HEADER));
 
         QueryAnalyzer analyzer = new QueryAnalyzer(props);
         Map<String, QueryBase> allNodes = analyzer.getQueries();
 
-        DefaultTaskReader reader = new DefaultTaskReader(args[1]);
+        DefaultTaskReader reader = new DefaultTaskReader(args[1], skipHeader);
         BufferedWriter writer = new BufferedWriter(new FileWriter(args[2]));
 //        String line;
 

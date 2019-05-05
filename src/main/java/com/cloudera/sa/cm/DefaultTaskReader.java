@@ -22,7 +22,7 @@ public class DefaultTaskReader {
     private Iterator<String> keyItr;
     private String current;
 
-    public DefaultTaskReader(String input) throws IOException {
+    public DefaultTaskReader(String input, boolean skipHeader) throws IOException {
         this.input = input;
         this.srcTbls = new HashMap<>();
         this.tarTbls = new HashMap<>();
@@ -30,6 +30,9 @@ public class DefaultTaskReader {
         BufferedReader reader = new BufferedReader(new FileReader(input));
 
         String line;
+        if(skipHeader) {
+            reader.readLine();
+        }
         while((line = reader.readLine()) != null) {
             parseLine(line);
         }

@@ -60,7 +60,7 @@ public class SearchTask {
             String current = tableToScan.pop();
 
             if(allQueries.containsKey(current) && !exclude.contains(current)
-                    && !found.containsKey(current) && inSrc(current)) {
+                    && !found.containsKey(current) && !inSrc(current)) {
                 QueryBase value = allQueries.get(current);
                 found.put(current, value);
                 for(String dependency : value.getSource()) {
