@@ -98,7 +98,12 @@ public class QueryAnalyzer {
 
             String mem = query.getAttributes().get("memory_per_node_peak");
             BigDecimal durationMS = query.getDurationMillis();
-            double admissionWait = Double.parseDouble(query.getAttributes().get("admission_wait"));
+
+            String admissionWaitString = query.getAttributes().get("admission_wait");
+            double admissionWait = 0;
+            if(admissionWaitString != null) {
+                admissionWait = Double.parseDouble(admissionWaitString);
+            }
 
             double memGB = 0;
             double duration = 0;
