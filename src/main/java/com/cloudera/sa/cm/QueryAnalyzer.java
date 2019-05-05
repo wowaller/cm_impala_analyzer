@@ -5,9 +5,7 @@ import com.cloudera.api.swagger.model.ApiImpalaQueryDetailsResponse;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.BufferedReader;
-import java.io.FileInputStream;
-import java.io.FileReader;
+import java.io.*;
 import java.math.BigDecimal;
 import java.util.*;
 
@@ -34,6 +32,8 @@ public class QueryAnalyzer {
     public static final String DEFAULT_QUERY_FILTER = "";
     public static final String EXCLUDE_TBL_LIST = "excludeTbls";
     public static final String DEFAULT_EXCLUDE_TBL_LIST_DELIMITER = ",";
+    public static final String IGNORE_DB_NAME = "ignore_db";
+    public static final String DEFAULT_IGNORE_DB_NAME = "false";
 
     public static final String DEFAULT_INPUT_SPLIT = "\\|";
 
@@ -53,8 +53,10 @@ public class QueryAnalyzer {
     private String from;
     private String to;
     private String filter;
+    private boolean ignoreDB;
 
     private Map<String, QueryBase> allQueries;
+
     private Set<String> exclude;
 
     public QueryAnalyzer(Properties props) {
@@ -74,6 +76,7 @@ public class QueryAnalyzer {
         from = props.getProperty(QUERY_START_TIME);
         to = props.getProperty(QUERY_END_TIME);
         filter = props.getProperty(QUERY_FILTER, DEFAULT_QUERY_FILTER);
+        ignoreDB = Boolean.parseBoolean(props.getProperty(IGNORE_DB_NAME, DEFAULT_IGNORE_DB_NAME));
         String excludeString = props.getProperty(EXCLUDE_TBL_LIST);
 
         allQueries = new HashMap<>();
@@ -97,7 +100,7 @@ public class QueryAnalyzer {
 
             String mem = query.getAttributes().get("memory_per_node_peak");
             BigDecimal durationMS = query.getDurationMillis();
-            String adminWait = query.getAttributes().get("admission_wait");
+            double admissionWait = Double.parseDouble(query.getAttributes().get("admission_wait"));
 
             double memGB = 0;
             double duration = 0;
@@ -130,7 +133,7 @@ public class QueryAnalyzer {
             }
 
             try {
-                QueryBase node = new QueryBase(statement, duration, memGB);
+                QueryBase node = new QueryBase(statement, duration, admissionWait, memGB, ignoreDB);
 
                 if(!node.getSource().isEmpty() && !node.getTarget().isEmpty()) {
                     if(LOGGER.isDebugEnabled()) {
@@ -160,50 +163,7 @@ public class QueryAnalyzer {
         return allQueries;
     }
 
-    public List<QueryBase> findSqlDfs(Set<String> targetTbls, Set<String> sourceTbls) {
-        Map<String, QueryBase> sqls = new HashMap<>();
 
-        for(String target : targetTbls) {
-            QueryBase current = allQueries.get(target);
-            if(current != null) {
-                sqls.put(target, current);
-                dfsTraverse(current, sourceTbls, sqls);
-            }
-        }
-        return new ArrayList<QueryBase>(sqls.values());
-    }
-
-    public void dfsTraverse(QueryBase current, Set<String> stopTbls, Map<String, QueryBase> found) {
-        for(String dependency : current.getSource()) {
-            // The dependency is not seen yet and it's not the end of search.
-            if(allQueries.containsKey(dependency) && !exclude.contains(dependency)
-                    && !found.containsKey(dependency) && !stopTbls.contains(dependency)) {
-                QueryBase value = allQueries.get(dependency);
-                found.put(dependency, value);
-                dfsTraverse(value, stopTbls, found);
-            }
-        }
-    }
-
-    public List<QueryBase> findSqlWfs(Set<String> targetTbls, Set<String> sourceTbls) {
-        Map<String, QueryBase> found = new HashMap<>();
-        LinkedList<String> tableToScan = new LinkedList<>();
-        tableToScan.addAll(targetTbls);
-
-        while(!tableToScan.isEmpty()) {
-            String current = tableToScan.pop();
-
-            if(allQueries.containsKey(current) && !exclude.contains(current)
-                    && !found.containsKey(current) && !sourceTbls.contains(current)) {
-                QueryBase value = allQueries.get(current);
-                found.put(current, value);
-                for(String dependency : value.getSource()) {
-                    tableToScan.push(dependency);
-                }
-            }
-        }
-        return new ArrayList<QueryBase>(found.values());
-    }
 
     public String getHost() {
         return host;
@@ -293,8 +253,12 @@ public class QueryAnalyzer {
         this.allQueries = allQueries;
     }
 
+    public Set<String> getExclude() {
+        return exclude;
+    }
+
     public static void main(String[] args) throws Exception {
-        if(args.length < 2) {
+        if(args.length < 3) {
             LOGGER.error("Too few arguments");
             System.exit(1);
         }
@@ -304,55 +268,62 @@ public class QueryAnalyzer {
         Properties props = new Properties();
         props.load(new FileInputStream(args[0]));
 
-        BufferedReader reader = new BufferedReader(new FileReader(args[1]));
+        DefaultTaskReader reader = new DefaultTaskReader(args[1]);
+        BufferedWriter writer = new BufferedWriter(new FileWriter(args[2]));
 
         QueryAnalyzer analyzer = new QueryAnalyzer(props);
-        Map<String, QueryBase> allNodes = analyzer.getQueries();
+//        Map<String, QueryBase> allNodes = analyzer.getQueries();
 
-        String line;
+//        String line;
 
         LOGGER.info("Finished collecting queryies. Trying to search jobs.");
 
-        while((line = reader.readLine()) != null) {
-            String[] split = line.split(DEFAULT_INPUT_SPLIT);
-            String id = split[0];
-            LOGGER.info("Searching for query:" + id);
-            Set<String> targetTbls = new HashSet<>(Arrays.asList(split[1].split(DEFAULT_EXCLUDE_TBL_LIST_DELIMITER)));
-            Set<String> sourceTbls = new HashSet<>(Arrays.asList(split[2].split(DEFAULT_EXCLUDE_TBL_LIST_DELIMITER)));
-            List<QueryBase> job = analyzer.findSqlWfs(targetTbls, sourceTbls);
 
-            String queryMostMem = "";
-            String queryLongest = "";
 
-            double maxMem = 0;
-            double maxDuration = 0;
-            double totalDuration = 0;
-            for (QueryBase query : job) {
-                if (LOGGER.isDebugEnabled()) {
-                    LOGGER.debug(query.getStatement());
-                }
+        while(reader.hasNext()) {
+//            String[] split = line.split(DEFAULT_INPUT_SPLIT);
+//            String id = split[0];
+//            LOGGER.info("Searching for query:" + id);
+//            Set<String> targetTbls = new HashSet<>(Arrays.asList(split[1].split(DEFAULT_EXCLUDE_TBL_LIST_DELIMITER)));
+//            Set<String> sourceTbls = new HashSet<>(Arrays.asList(split[2].split(DEFAULT_EXCLUDE_TBL_LIST_DELIMITER)));
+            SearchTask task = reader.nextTask();
+            List<QueryBase> job = task.findSqlWfs(analyzer.getAllQueries(), analyzer.getExclude());
 
-                if(query.getMemory() > maxMem) {
-                    maxMem = query.getMemory();
-                    queryMostMem = query.getStatement();
-                }
-
-                if(query.getDuration() > maxDuration) {
-                    maxDuration = query.getDuration();
-                    queryLongest = query.getStatement();
-                }
-
-//                System.out.println(query.getStatement());
-                totalDuration += query.getDuration();
-            }
-            LOGGER.info("====ID : " + id + ", Mem : " + maxMem + "G, Duration : " + totalDuration);
-            System.out.println("====ID : " + id + ", Mem : " + maxMem + "G, Duration : " + totalDuration);
-            if (LOGGER.isDebugEnabled()) {
-                LOGGER.debug("Longest query: " + queryLongest);
-                LOGGER.debug("Query with largest memory: " + queryMostMem);
-
-            }
-
+//            String queryMostMem = "";
+//            String queryLongest = "";
+//
+//            double maxMem = 0;
+//            double maxDuration = 0;
+//            double totalDuration = 0;
+//            for (QueryBase query : job) {
+//                if (LOGGER.isDebugEnabled()) {
+//                    LOGGER.debug(query.getStatement());
+//                }
+//
+//                if(query.getMemory() > maxMem) {
+//                    maxMem = query.getMemory();
+//                    queryMostMem = query.getStatement();
+//                }
+//
+//                if(query.getDuration() > maxDuration) {
+//                    maxDuration = query.getDuration();
+//                    queryLongest = query.getStatement();
+//                }
+//
+////                System.out.println(query.getStatement());
+//                totalDuration += query.getDuration();
+//            }
+//            LOGGER.info("====ID : " + id + ", Mem : " + maxMem + "G, Duration : " + totalDuration);
+//            writer.write(id + "," + maxMem + "," + totalDuration);
+//            writer.newLine();
+//            if (LOGGER.isDebugEnabled()) {
+//                LOGGER.debug("Longest query: " + queryLongest);
+//                LOGGER.debug("Query with largest memory: " + queryMostMem);
+//            }
+            writer.write(task.getCSVResult());
+            writer.newLine();
         }
+        writer.close();
+
     }
 }

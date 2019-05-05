@@ -47,7 +47,7 @@ public class QueryBase {
         }
     }
 
-    public QueryBase(String statement, double duration, double memory) throws Exception {
+    public QueryBase(String statement, double duration, double admission_wait, double memory, boolean ignoreDb) throws Exception {
 
         source = new HashSet<>();
         target = new HashSet<>();
@@ -85,6 +85,8 @@ public class QueryBase {
 
     private void parseJSQL(String statement) throws SemanticException, ParserException, JSQLParserException {
         Statement stmt = CCJSqlParserUtil.parse(statement);
+
+        List<String> tables;
 
         if (stmt instanceof Select) {
             Select selectStatement = (Select) stmt;
