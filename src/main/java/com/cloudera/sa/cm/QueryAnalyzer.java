@@ -53,12 +53,14 @@ public class QueryAnalyzer {
     private String from;
     private String to;
     private String filter;
+    private TaskReader reader;
+    private boolean ignoreDB;
 
     private Map<String, QueryBase> allQueries;
 
     private Set<String> exclude;
 
-    public QueryAnalyzer(Properties props) {
+    public QueryAnalyzer(String input, Properties props) throws ClassNotFoundException, IOException, InstantiationException, IllegalAccessException {
         host = props.getProperty(CM_HOST);
         port = Integer.parseInt(props.getProperty(CM_PORT));
         version = props.getProperty(API_VERSION);
@@ -82,6 +84,9 @@ public class QueryAnalyzer {
         if(excludeString != null) {
             exclude.addAll(Arrays.asList(excludeString.split(DEFAULT_EXCLUDE_TBL_LIST_DELIMITER)));
         }
+
+        reader = TaskReaderFactory.getReader(input, props);
+        ignoreDB = Boolean.parseBoolean(props.getProperty(IGNORE_DB_NAME, DEFAULT_IGNORE_DB_NAME));
     }
 
     public Map<String, QueryBase> getQueries() throws Exception {
@@ -261,6 +266,21 @@ public class QueryAnalyzer {
         return exclude;
     }
 
+    public boolean hasNextTask() {
+        return reader.hasNext();
+    }
+
+    public SearchTask nextTask() {
+        String id = reader.next();
+        SearchTask task = new SearchTask(id, reader.nextTargets(), reader.nextSources(), ignoreDB);
+        task.findSqlWfs(getAllQueries(), getExclude());
+        return task;
+    }
+
+    public String prettyCsvLine(SearchTask task) {
+        return task.getCSVResult();
+    }
+
     public static void main(String[] args) throws Exception {
         if(args.length < 3) {
             LOGGER.error("Too few arguments");
@@ -272,26 +292,26 @@ public class QueryAnalyzer {
         Properties props = new Properties();
         props.load(new FileInputStream(args[0]));
 
-        boolean ignoreDB = Boolean.parseBoolean(props.getProperty(IGNORE_DB_NAME, DEFAULT_IGNORE_DB_NAME));
 
-        QueryAnalyzer analyzer = new QueryAnalyzer(props);
+        QueryAnalyzer analyzer = new QueryAnalyzer(args[1], props);
         Map<String, QueryBase> allNodes = analyzer.getQueries();
 
-        TaskReader reader = TaskReaderFactory.getReader(args[1], props);
+//        TaskReader reader = TaskReaderFactory.getReader(args[1], props);
         BufferedWriter writer = new BufferedWriter(new FileWriter(args[2]));
 //        String line;
 
         LOGGER.info("Finished collecting queryies. Trying to search jobs.");
 
-        while(reader.hasNext()) {
+        while(analyzer.hasNextTask()) {
 //            String[] split = line.split(DEFAULT_INPUT_SPLIT);
 //            String id = split[0];
 //            Set<String> targetTbls = new HashSet<>(Arrays.asList(split[1].split(DEFAULT_EXCLUDE_TBL_LIST_DELIMITER)));
 //            Set<String> sourceTbls = new HashSet<>(Arrays.asList(split[2].split(DEFAULT_EXCLUDE_TBL_LIST_DELIMITER)));
-            String id = reader.next();
-            LOGGER.info("Searching for query:" + id);
-            SearchTask task = new SearchTask(id, reader.nextTargets(), reader.nextSources(), ignoreDB);
-            List<QueryBase> job = task.findSqlWfs(analyzer.getAllQueries(), analyzer.getExclude());
+//            String id = reader.next();
+//            LOGGER.info("Searching for query:" + id);
+//            SearchTask task = new SearchTask(id, reader.nextTargets(), reader.nextSources(), ignoreDB);
+//            List<QueryBase> job = task.findSqlWfs(analyzer.getAllQueries(), analyzer.getExclude());
+            SearchTask task = analyzer.nextTask();
 
 //            String queryMostMem = "";
 //            String queryLongest = "";
@@ -324,7 +344,7 @@ public class QueryAnalyzer {
 //                LOGGER.debug("Longest query: " + queryLongest);
 //                LOGGER.debug("Query with largest memory: " + queryMostMem);
 //            }
-            writer.write(task.getCSVResult());
+            writer.write(analyzer.prettyCsvLine(task));
             writer.newLine();
         }
         writer.close();
