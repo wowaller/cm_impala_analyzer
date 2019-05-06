@@ -12,6 +12,7 @@ public class TaskInfoCollector {
     private String id;
     private Set<String> targetTbls;
     private Set<String> sourceTbls;
+    private Set<String> foundTargetTbls;
     private Map<String, QueryBase> found;
     private Set<String> missed;
     private LinkedList<String> tableToScan;
@@ -46,6 +47,10 @@ public class TaskInfoCollector {
                 found.put(target, current);
                 metrics.updateMetrics(current.getMetrics());
                 dfsTraverse(current, found, allQueries, exclude);
+            } else if (inSrc(target)) {
+                foundTargetTbls.add(target);
+            } else if (!allQueries.containsKey(target)) {
+                missed.add(target);
             }
         }
         return new ArrayList<>(found.values());
@@ -61,6 +66,8 @@ public class TaskInfoCollector {
                 found.put(dependency, value);
                 metrics.updateMetrics(value.getMetrics());
                 dfsTraverse(value, found, allQueries, exclude);
+            } else if (inSrc(dependency)) {
+                foundTargetTbls.add(dependency);
             } else if (!allQueries.containsKey(dependency)) {
                 missed.add(dependency);
             }
@@ -84,6 +91,10 @@ public class TaskInfoCollector {
                 for(String dependency : value.getSource()) {
                     tableToScan.push(dependency);
                 }
+            } else if (inSrc(current)) {
+                foundTargetTbls.add(current);
+            } else if (!allQueries.containsKey(current)) {
+                missed.add(current);
             }
         }
         return new ArrayList<>(found.values());
@@ -185,5 +196,9 @@ public class TaskInfoCollector {
 
     public Set<String> getMissed() {
         return missed;
+    }
+
+    public boolean isAllSrcFound() {
+        return foundTargetTbls.containsAll(targetTbls);
     }
 }
