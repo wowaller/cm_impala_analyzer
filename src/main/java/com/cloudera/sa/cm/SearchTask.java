@@ -72,15 +72,11 @@ public class SearchTask {
     }
 
     public boolean inSrc(String tbl) {
-        if(!ignoreSrcDb) {
+        if(!ignoreSrcDb || !tbl.contains(".")) {
             return sourceTbls.contains(tbl);
         } else {
-            for(String src : sourceTbls) {
-                if(src.equalsIgnoreCase(tbl)) {
-                    return true;
-                }
-            }
-            return false;
+            String tblNoDb = tbl.split("\\.")[1];
+            return sourceTbls.contains(tblNoDb);
         }
     }
 

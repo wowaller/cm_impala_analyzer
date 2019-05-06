@@ -23,7 +23,7 @@ public class DefaultTaskReader implements TaskReader {
     private Iterator<String> keyItr;
     private String current;
 
-    public DefaultTaskReader(String input, boolean skipHeader) {
+    public DefaultTaskReader() {
         this.srcTbls = new HashMap<>();
         this.tarTbls = new HashMap<>();
 

@@ -29,7 +29,7 @@ public class OMTextTaskReader implements TaskReader {
     private Iterator<String> keyItr;
     private String current;
 
-    public OMTextTaskReader(String input, boolean skipHeader) {
+    public OMTextTaskReader() {
         this.srcTbls = new HashMap<>();
         this.tarTbls = new HashMap<>();
 
