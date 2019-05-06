@@ -126,7 +126,7 @@ public class TaskInfoCollector {
 
     /**
      * The String is formmatted as id, user, maxMemoryGB, TotalDuration, MaxDuration, Total Admission Wait, TotalInput, Total Output
-     * , File Formats, Not Found SQL Number, Total Query Count.
+     * , File Formats, Not Found SQL Number,Not Found Source Tables,Total Query Count.
 
      * @return
      */
@@ -184,6 +184,7 @@ public class TaskInfoCollector {
 
 
         csvBuilder.append(notFoundTbls()).append(",");
+        csvBuilder.append(getMissedSrc().size()).append(",");
         csvBuilder.append(getQueryCount());
 
         return csvBuilder.toString();
@@ -207,6 +208,12 @@ public class TaskInfoCollector {
 
     public Set<String> getMissed() {
         return missed;
+    }
+
+    public Set<String> getMissedSrc() {
+        Set<String> ret = new HashSet<>(sourceTbls);
+        ret.removeAll(foundSrcTbls);
+        return ret;
     }
 
     public boolean isAllSrcFound() {

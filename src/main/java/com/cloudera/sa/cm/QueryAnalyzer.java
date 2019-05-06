@@ -295,7 +295,7 @@ public class QueryAnalyzer {
     public String prettyCsvHeader() {
         StringBuilder header = new StringBuilder();
         header.append("id,user,maxMemoryGB,TotalDuration,MaxDuration,Total Admission Wait,Total Input,Total Output" +
-                ",File Formats,Pools,Not Found SQL Number,Total Query Count");
+                ",File Formats,Pools,Not Found SQL Number,Not Found Source Tables,Total Query Count");
         if(!queueSetting.isEmpty()) {
             header.append(",Max Resource Pool,Pool Utility,Proper Pool");
         }
@@ -304,7 +304,7 @@ public class QueryAnalyzer {
 
     /**
      * The String is formmatted as id, user, maxMemoryGB, TotalDuration, MaxDuration, Total Admission Wait, TotalInput, Total Output
-     * , File Formats,Pools,Not Found SQL Number, Total Query Count(, Max Resource Pool, Pool Utility, Proper Pool)
+     * , File Formats,Pools,Not Found SQL Number, Not Found Source Tables, Total Query Count(, Max Resource Pool, Pool Utility, Proper Pool)
      *
      * @param task
      * @return
