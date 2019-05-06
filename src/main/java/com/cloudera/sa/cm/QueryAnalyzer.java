@@ -286,8 +286,8 @@ public class QueryAnalyzer {
 
     public String prettyCsvHeader() {
         StringBuilder header = new StringBuilder();
-        header.append("id,user,maxMemoryGB,TotalDuration,MaxDuration,Total Admission Wait,TotalInput,Total Output" +
-                ",File Formats,Not Found SQL Number,Total Query Count");
+        header.append("id,user,maxMemoryGB,TotalDuration,MaxDuration,Total Admission Wait,Total Input,Total Output" +
+                ",File Formats,Pools,Not Found SQL Number,Total Query Count");
         if(!queueSetting.isEmpty()) {
             header.append(",Max Resource Pool,Pool Utility,Proper Pool");
         }
@@ -296,7 +296,7 @@ public class QueryAnalyzer {
 
     /**
      * The String is formmatted as id, user, maxMemoryGB, TotalDuration, MaxDuration, Total Admission Wait, TotalInput, Total Output
-     * , File Formats, Not Found SQL Number, Total Query Count(, Max Resource Pool, Pool Utility, Proper Pool)
+     * , File Formats,Pools,Not Found SQL Number, Total Query Count(, Max Resource Pool, Pool Utility, Proper Pool)
      *
      * @param task
      * @return
@@ -319,7 +319,7 @@ public class QueryAnalyzer {
                 }
             }
 
-            double utility = task.getMetrics().getMaxMemoryGb() / maxQueueResource;
+            double utility = task.getMetrics().getMaxMemoryGb() / maxQueueResource * 100;
 
             String properPool = "Too large";
             double waste = Double.MAX_VALUE;
