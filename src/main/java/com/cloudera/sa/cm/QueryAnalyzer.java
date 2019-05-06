@@ -92,11 +92,13 @@ public class QueryAnalyzer {
 
         queueSetting = new HashMap<>();
         String queueString = props.getProperty(IMPALA_RESOURCE_POOL_LIST);
-        for(String pool : queueString.split(DEFAULT_LIST_DELIMITER)) {
-            String[] poolSplit = pool.split(":");
-            String poolName = poolSplit[0];
-            double memLimit = Double.parseDouble(poolSplit[1]);
-            queueSetting.put(poolName, memLimit);
+        if(queueString != null) {
+            for (String pool : queueString.split(DEFAULT_LIST_DELIMITER)) {
+                String[] poolSplit = pool.split(":");
+                String poolName = poolSplit[0];
+                double memLimit = Double.parseDouble(poolSplit[1]);
+                queueSetting.put(poolName, memLimit);
+            }
         }
     }
 
