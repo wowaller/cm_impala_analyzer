@@ -25,6 +25,7 @@ public class TaskInfoCollector {
         this.sourceTbls = sourceTbls;
         this.found = new HashMap<>();
         this.missed = new HashSet<>();
+        this.foundTargetTbls = new HashSet<>();
         this.tableToScan = new LinkedList<>();
         this.ignoreSrcDb = ignoreSrcDb;
         this.metrics = new TaskMetrics();
@@ -33,6 +34,7 @@ public class TaskInfoCollector {
     public void clear() {
         this.found = new HashMap<>();
         this.missed = new HashSet<>();
+        this.foundTargetTbls = new HashSet<>();
         this.tableToScan = new LinkedList<>();
         this.metrics = new TaskMetrics();
     }
