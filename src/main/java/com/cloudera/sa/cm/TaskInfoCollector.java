@@ -12,7 +12,7 @@ public class TaskInfoCollector {
     private String id;
     private Set<String> targetTbls;
     private Set<String> sourceTbls;
-    private Set<String> foundTargetTbls;
+    private Set<String> foundSrcTbls;
     private Map<String, QueryBase> found;
     private Set<String> missed;
     private LinkedList<String> tableToScan;
@@ -25,7 +25,7 @@ public class TaskInfoCollector {
         this.sourceTbls = sourceTbls;
         this.found = new HashMap<>();
         this.missed = new HashSet<>();
-        this.foundTargetTbls = new HashSet<>();
+        this.foundSrcTbls = new HashSet<>();
         this.tableToScan = new LinkedList<>();
         this.ignoreSrcDb = ignoreSrcDb;
         this.metrics = new TaskMetrics();
@@ -34,7 +34,7 @@ public class TaskInfoCollector {
     public void clear() {
         this.found = new HashMap<>();
         this.missed = new HashSet<>();
-        this.foundTargetTbls = new HashSet<>();
+        this.foundSrcTbls = new HashSet<>();
         this.tableToScan = new LinkedList<>();
         this.metrics = new TaskMetrics();
     }
@@ -50,7 +50,7 @@ public class TaskInfoCollector {
                 metrics.updateMetrics(current.getMetrics());
                 dfsTraverse(current, found, allQueries, exclude);
             } else if (inSrc(target)) {
-                foundTargetTbls.add(target);
+                foundSrcTbls.add(target);
             } else if (!allQueries.containsKey(target)) {
                 missed.add(target);
             }
@@ -69,7 +69,7 @@ public class TaskInfoCollector {
                 metrics.updateMetrics(value.getMetrics());
                 dfsTraverse(value, found, allQueries, exclude);
             } else if (inSrc(dependency)) {
-                foundTargetTbls.add(dependency);
+                foundSrcTbls.add(dependency);
             } else if (!allQueries.containsKey(dependency)) {
                 missed.add(dependency);
             }
@@ -94,7 +94,7 @@ public class TaskInfoCollector {
                     tableToScan.push(dependency);
                 }
             } else if (inSrc(current)) {
-                foundTargetTbls.add(current);
+                foundSrcTbls.add(current);
             } else if (!allQueries.containsKey(current)) {
                 missed.add(current);
             }
@@ -201,6 +201,6 @@ public class TaskInfoCollector {
     }
 
     public boolean isAllSrcFound() {
-        return foundTargetTbls.containsAll(targetTbls);
+        return foundSrcTbls.containsAll(sourceTbls);
     }
 }
