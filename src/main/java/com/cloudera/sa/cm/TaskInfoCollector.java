@@ -50,7 +50,7 @@ public class TaskInfoCollector {
                 metrics.updateMetrics(current.getMetrics());
                 dfsTraverse(current, found, allQueries, exclude);
             } else if (inSrc(target)) {
-                foundSrcTbls.add(target);
+                recordFoundSrc(target);
             } else if (!allQueries.containsKey(target)) {
                 missed.add(target);
             }
@@ -69,7 +69,7 @@ public class TaskInfoCollector {
                 metrics.updateMetrics(value.getMetrics());
                 dfsTraverse(value, found, allQueries, exclude);
             } else if (inSrc(dependency)) {
-                foundSrcTbls.add(dependency);
+                recordFoundSrc(dependency);
             } else if (!allQueries.containsKey(dependency)) {
                 missed.add(dependency);
             }
@@ -94,7 +94,7 @@ public class TaskInfoCollector {
                     tableToScan.push(dependency);
                 }
             } else if (inSrc(current)) {
-                foundSrcTbls.add(current);
+                recordFoundSrc(current);
             } else if (!allQueries.containsKey(current)) {
                 missed.add(current);
             }
@@ -108,6 +108,15 @@ public class TaskInfoCollector {
         } else {
             String tblNoDb = tbl.split("\\.")[1];
             return sourceTbls.contains(tblNoDb);
+        }
+    }
+
+    public void recordFoundSrc(String tbl) {
+        if(!ignoreSrcDb || !tbl.contains(".")) {
+            foundSrcTbls.add(tbl);
+        } else {
+            String tblNoDb = tbl.split("\\.")[1];
+            foundSrcTbls.add(tblNoDb);
         }
     }
 
