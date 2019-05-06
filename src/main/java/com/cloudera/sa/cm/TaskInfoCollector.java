@@ -13,6 +13,7 @@ public class TaskInfoCollector {
     private Set<String> targetTbls;
     private Set<String> sourceTbls;
     private Map<String, QueryBase> found;
+    private Set<String> missed;
     private LinkedList<String> tableToScan;
     private boolean ignoreSrcDb;
     private TaskMetrics metrics;
@@ -22,13 +23,22 @@ public class TaskInfoCollector {
         this.targetTbls = targetTbls;
         this.sourceTbls = sourceTbls;
         this.found = new HashMap<>();
+        this.missed = new HashSet<>();
         this.tableToScan = new LinkedList<>();
         this.ignoreSrcDb = ignoreSrcDb;
         this.metrics = new TaskMetrics();
     }
 
+    public void clear() {
+        this.found = new HashMap<>();
+        this.missed = new HashSet<>();
+        this.tableToScan = new LinkedList<>();
+        this.metrics = new TaskMetrics();
+    }
+
 
     public List<QueryBase> findSqlDfs(Map<String, QueryBase> allQueries, Set<String> exclude) {
+        clear();
         for(String target : targetTbls) {
             if(allQueries.containsKey(target) && !exclude.contains(target)
                     && !found.containsKey(target) && !inSrc(target)) {
@@ -51,6 +61,8 @@ public class TaskInfoCollector {
                 found.put(dependency, value);
                 metrics.updateMetrics(value.getMetrics());
                 dfsTraverse(value, found, allQueries, exclude);
+            } else if (!allQueries.containsKey(dependency)) {
+                missed.add(dependency);
             }
         }
     }
@@ -58,6 +70,7 @@ public class TaskInfoCollector {
     public List<QueryBase> findSqlWfs(Map<String, QueryBase> allQueries, Set<String> exclude) {
 //        Map<String, QueryBase> found = new HashMap<>();
 //        LinkedList<String> tableToScan = new LinkedList<>();
+        clear();
         tableToScan.addAll(targetTbls);
 
         while(!tableToScan.isEmpty()) {
@@ -127,8 +140,18 @@ public class TaskInfoCollector {
         for(String format : metrics.getFileFormats()) {
             sj.add(format);
         }
-        csvBuilder.append(sj.toString());
+        csvBuilder.append(sj.toString()).append(",");
+        csvBuilder.append(notFoundTbls()).append(",");
+        csvBuilder.append(getQueryCount());
 
         return csvBuilder.toString();
+    }
+
+    public int notFoundTbls() {
+        return missed.size();
+    }
+
+    public int getQueryCount() {
+        return found.values().size();
     }
 }
