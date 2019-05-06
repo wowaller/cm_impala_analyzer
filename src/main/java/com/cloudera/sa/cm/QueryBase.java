@@ -32,21 +32,23 @@ public class QueryBase {
     private HashSet<String> cteAlias;
 
     private String statement;
-    private double duration;
-    private double memory;
-    private double admissionWait;
+//    private double duration;
+//    private double memory;
+//    private double admissionWait;
+    private TaskMetrics metrics;
 
 
-    public QueryBase(String statement, double duration, double admissionWait, double memory) throws Exception {
+    public QueryBase(String statement, TaskMetrics metrics) throws Exception {
 
         source = new HashSet<>();
         target = new HashSet<>();
         cteAlias = new HashSet<>();
 
-        this.duration = duration;
-        this.memory = memory;
+//        this.duration = duration;
+//        this.memory = memory;
         this.statement = statement;
-        this.admissionWait = admissionWait;
+        this.metrics = metrics;
+//        this.admissionWait = admissionWait;
 
         parseImpala(statement.toLowerCase());
     }
@@ -201,27 +203,31 @@ public class QueryBase {
         return statement;
     }
 
-    public double getDuration() {
-        return duration;
+    public TaskMetrics getMetrics() {
+        return metrics;
     }
 
-    public double getMemory() {
-        return memory;
-    }
-
-    public void setDuration(double duration) {
-        this.duration = duration;
-    }
-
-    public void setMemory(double memory) {
-        this.memory = memory;
-    }
-
-    public double getAdmissionWait() {
-        return admissionWait;
-    }
-
-    public void setAdmissionWait(double admissionWait) {
-        this.admissionWait = admissionWait;
-    }
+//    public double getDuration() {
+//        return duration;
+//    }
+//
+//    public double getMemory() {
+//        return memory;
+//    }
+//
+//    public void setDuration(double duration) {
+//        this.duration = duration;
+//    }
+//
+//    public void setMemory(double memory) {
+//        this.memory = memory;
+//    }
+//
+//    public double getAdmissionWait() {
+//        return admissionWait;
+//    }
+//
+//    public void setAdmissionWait(double admissionWait) {
+//        this.admissionWait = admissionWait;
+//    }
 }

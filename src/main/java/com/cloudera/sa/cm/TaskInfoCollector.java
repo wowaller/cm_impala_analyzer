@@ -5,9 +5,9 @@ import org.slf4j.LoggerFactory;
 
 import java.util.*;
 
-public class SearchTask {
+public class TaskInfoCollector {
 
-    private static final Logger LOGGER = LoggerFactory.getLogger(SearchTask.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(TaskInfoCollector.class);
 
     private String id;
     private Set<String> targetTbls;
@@ -15,14 +15,16 @@ public class SearchTask {
     private Map<String, QueryBase> found;
     private LinkedList<String> tableToScan;
     private boolean ignoreSrcDb;
+    private TaskMetrics metrics;
 
-    public SearchTask(String id, Set<String> targetTbls, Set<String> sourceTbls, boolean ignoreSrcDb) {
+    public TaskInfoCollector(String id, Set<String> targetTbls, Set<String> sourceTbls, boolean ignoreSrcDb) {
         this.id = id;
         this.targetTbls = targetTbls;
         this.sourceTbls = sourceTbls;
         this.found = new HashMap<>();
         this.tableToScan = new LinkedList<>();
         this.ignoreSrcDb = ignoreSrcDb;
+        this.metrics = new TaskMetrics();
     }
 
 
@@ -32,6 +34,7 @@ public class SearchTask {
                     && !found.containsKey(target) && !inSrc(target)) {
                 QueryBase current = allQueries.get(target);
                 found.put(target, current);
+                metrics.updateMetrics(current.getMetrics());
                 dfsTraverse(current, found, allQueries, exclude);
             }
         }
@@ -46,6 +49,7 @@ public class SearchTask {
                     && !found.containsKey(dependency) && !inSrc(dependency)) {
                 QueryBase value = allQueries.get(dependency);
                 found.put(dependency, value);
+                metrics.updateMetrics(value.getMetrics());
                 dfsTraverse(value, found, allQueries, exclude);
             }
         }
@@ -63,6 +67,7 @@ public class SearchTask {
                     && !found.containsKey(current) && !inSrc(current)) {
                 QueryBase value = allQueries.get(current);
                 found.put(current, value);
+                metrics.updateMetrics(value.getMetrics());
                 for(String dependency : value.getSource()) {
                     tableToScan.push(dependency);
                 }
@@ -80,37 +85,50 @@ public class SearchTask {
         }
     }
 
-    public String getCSVResult() {
+    public TaskMetrics getMetrics() {
+        return metrics;
+    }
 
+    public String getCSVResult() {
         String queryMostMem = "";
         String queryLongest = "";
 
-        double maxMem = 0;
-        double maxDuration = 0;
-        double totalDuration = 0;
-        for (QueryBase query : found.values()) {
-            if (LOGGER.isDebugEnabled()) {
+        if (LOGGER.isDebugEnabled()) {
+            for (QueryBase query : found.values()) {
                 LOGGER.debug(query.getStatement());
-            }
 
-            if(query.getMemory() > maxMem) {
-                maxMem = query.getMemory();
-                queryMostMem = query.getStatement();
-            }
+                if (query.getMetrics().getMaxMemoryGb() >= metrics.getMaxMemoryGb()) {
+                    queryMostMem = query.getStatement();
+                }
 
-            if(query.getDuration() > maxDuration) {
-                maxDuration = query.getDuration();
-                queryLongest = query.getStatement();
-            }
+                if (query.getMetrics().getDuration() >= metrics.getMaxDuration()) {
+                    queryLongest = query.getStatement();
+                }
 
-//                System.out.println(query.getStatement());
-            totalDuration += query.getDuration();
+            }
         }
-        LOGGER.info("====ID : " + id + ", Mem : " + maxMem + "G, Duration : " + totalDuration);
+        LOGGER.info("====ID : " + id + ", Mem : " + metrics.getMaxMemoryGb() + "G, Duration : " + metrics.getDuration());
         if (LOGGER.isDebugEnabled()) {
             LOGGER.debug("Longest query: " + queryLongest);
             LOGGER.debug("Query with largest memory: " + queryMostMem);
         }
-        return id + "," + maxMem + "G," + totalDuration;
+
+        StringBuilder csvBuilder = new StringBuilder();
+        csvBuilder.append(id).append(",");
+        csvBuilder.append(metrics.getMaxMemoryGb()).append(",");
+        csvBuilder.append(metrics.getDuration()).append(",");
+        csvBuilder.append(metrics.getMaxDuration()).append(",");
+        csvBuilder.append(metrics.getAdmissionDurtaion()).append(",");
+        csvBuilder.append(metrics.getTotalInputBuytes()).append(",");
+        csvBuilder.append(metrics.getTotalOutputBytes()).append(",");
+        csvBuilder.append(metrics.getTotalOutputBytes()).append(",");
+
+        StringJoiner sj = new StringJoiner("|");
+        for(String format : metrics.getFileFormats()) {
+            sj.add(format);
+        }
+        csvBuilder.append(sj.toString());
+
+        return csvBuilder.toString();
     }
 }

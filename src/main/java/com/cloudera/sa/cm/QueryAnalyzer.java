@@ -101,28 +101,12 @@ public class QueryAnalyzer {
                 LOGGER.debug("Retriving record count=" + count);
             }
 
-            String mem = query.getAttributes().get("memory_per_node_peak");
-            BigDecimal durationMS = query.getDurationMillis();
+            TaskMetrics metrics = QueryAnalyzeUtil.collectMetricsFromQueryResponse(query);
 
-            String admissionWaitString = query.getAttributes().get("admission_wait");
-            double admissionWait = 0;
-            if(admissionWaitString != null) {
-                admissionWait = Double.parseDouble(admissionWaitString);
-            }
-
-            double memGB = 0;
-            double duration = 0;
-
-            if (mem != null) {
-                memGB = Double.parseDouble(mem) / 1024 / 1024 / 1024;
-            }
-            if (durationMS != null) {
-                duration = durationMS.doubleValue() / 1000;
-            }
             String statement = query.getStatement();
 
             if (LOGGER.isDebugEnabled()) {
-                LOGGER.debug("Query info: memory=" + memGB + "GB, duration=" + duration + "s");
+                LOGGER.debug("Query info: memory=" + metrics.getMaxMemoryGb() + "GB, duration=" + metrics.getDuration() + "s");
             }
 
             if (statement.endsWith("...")) {
@@ -141,7 +125,7 @@ public class QueryAnalyzer {
             }
 
             try {
-                QueryBase node = new QueryBase(statement, duration, admissionWait, memGB);
+                QueryBase node = new QueryBase(statement, metrics);
 
                 if(!node.getSource().isEmpty() && !node.getTarget().isEmpty()) {
                     if(LOGGER.isDebugEnabled()) {
@@ -270,14 +254,15 @@ public class QueryAnalyzer {
         return reader.hasNext();
     }
 
-    public SearchTask nextTask() {
+    public TaskInfoCollector nextTask() {
         String id = reader.next();
-        SearchTask task = new SearchTask(id, reader.nextTargets(), reader.nextSources(), ignoreDB);
+        LOGGER.info("Searching for query:" + id);
+        TaskInfoCollector task = new TaskInfoCollector(id, reader.nextTargets(), reader.nextSources(), ignoreDB);
         task.findSqlWfs(getAllQueries(), getExclude());
         return task;
     }
 
-    public String prettyCsvLine(SearchTask task) {
+    public String prettyCsvLine(TaskInfoCollector task) {
         return task.getCSVResult();
     }
 
@@ -311,7 +296,7 @@ public class QueryAnalyzer {
 //            LOGGER.info("Searching for query:" + id);
 //            SearchTask task = new SearchTask(id, reader.nextTargets(), reader.nextSources(), ignoreDB);
 //            List<QueryBase> job = task.findSqlWfs(analyzer.getAllQueries(), analyzer.getExclude());
-            SearchTask task = analyzer.nextTask();
+            TaskInfoCollector task = analyzer.nextTask();
 
 //            String queryMostMem = "";
 //            String queryLongest = "";
