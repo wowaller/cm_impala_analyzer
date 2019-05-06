@@ -7,6 +7,8 @@ import java.io.BufferedReader;
 import java.io.FileReader;
 import java.io.IOException;
 import java.util.*;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 public class OMTextTaskReader implements TaskReader {
 
@@ -17,10 +19,10 @@ public class OMTextTaskReader implements TaskReader {
     public static final String SKIP_INPUT_HEADER = "skip_header";
     public static final String DEFAULT_SKIP_INPUT_HEADER = "false";
 
-    public static final int JOB_ID_INDEX = 0;
-    public static final int TARGET_DB_NAME = 1;
-    public static final int INPUT_TABLE = 2;
-    public static final int SOURCE_TABLE = 3;
+    public static final int JOB_ID_INDEX = 3;
+    public static final int TARGET_DB_NAME = 5;
+    public static final int INPUT_TABLE = 6;
+    public static final int SOURCE_TABLE = 15;
 
     private Map<String, Set<String>> srcTbls;
     private Map<String, Set<String>> tarTbls;
@@ -68,18 +70,27 @@ public class OMTextTaskReader implements TaskReader {
 
     private void parseLine(String line) {
         String[] split = line.split(DEFAULT_INPUT_SPLIT);
+
+        if(split.length < SOURCE_TABLE + 1) {
+            LOGGER.error("Error parsing line " + line);
+            return;
+        }
+
         String id = split[JOB_ID_INDEX];
         LOGGER.info("Reading task: " + id);
         String targetDB = split[TARGET_DB_NAME];
 
         // Output table does not have DB information. So add DB name to the target table.
-        String[] rawTarTbls = split[INPUT_TABLE].split(DEFAULT_EXCLUDE_TBL_LIST_DELIMITER);
+        // Remove all " in the original String
+        String targetString = validateTarget(split[INPUT_TABLE]);
+        String[] rawTarTbls = targetString.split(DEFAULT_EXCLUDE_TBL_LIST_DELIMITER);
         Set<String> targetTbls = new HashSet<>();
         for(String target : rawTarTbls) {
             targetTbls.add(targetDB + "." + target);
         }
 
-        Set<String> sourceTbls = new HashSet<>(Arrays.asList(split[SOURCE_TABLE].split(DEFAULT_EXCLUDE_TBL_LIST_DELIMITER)));
+        String sourceString = validateSource(split[SOURCE_TABLE]);
+        Set<String> sourceTbls = new HashSet<>(Arrays.asList(sourceString.split(DEFAULT_EXCLUDE_TBL_LIST_DELIMITER)));
 
         if(srcTbls.containsKey(id)) {
             srcTbls.get(id).addAll(sourceTbls);
@@ -92,5 +103,15 @@ public class OMTextTaskReader implements TaskReader {
         } else {
             tarTbls.put(id, targetTbls);
         }
+    }
+
+    private String validateSource(String srcString) {
+        return srcString.replace("\"", "");
+    }
+
+    private String validateTarget(String tarString) {
+        String tmp = tarString.replace("\"", "");
+        int countIndex = tmp.indexOf("(");
+        return tmp.substring(0, countIndex);
     }
 }
