@@ -34,6 +34,8 @@ public class QueryAnalyzer {
     public static final String IGNORE_DB_NAME = "ignore_db";
     public static final String DEFAULT_IGNORE_DB_NAME = "false";
     public static final String IMPALA_RESOURCE_POOL_LIST = "resource_pool";
+    public static final String FOUND_TASK_ONLY = "found_only";
+    public static final String DEFAULT_FOUND_TASK_ONLY = "true";
 
     public static final String DEFAULT_INPUT_SPLIT = "\\|";
 
@@ -55,6 +57,7 @@ public class QueryAnalyzer {
     private String filter;
     private TaskReader reader;
     private boolean ignoreDB;
+    private boolean outputFoundOnly;
 
     private Map<String, QueryBase> allQueries;
 
@@ -89,6 +92,7 @@ public class QueryAnalyzer {
 
         reader = TaskReaderFactory.getReader(input, props);
         ignoreDB = Boolean.parseBoolean(props.getProperty(IGNORE_DB_NAME, DEFAULT_IGNORE_DB_NAME));
+        outputFoundOnly = Boolean.parseBoolean(props.getProperty(FOUND_TASK_ONLY, DEFAULT_FOUND_TASK_ONLY));
 
         queueSetting = new HashMap<>();
         String queueString = props.getProperty(IMPALA_RESOURCE_POOL_LIST);
@@ -173,6 +177,10 @@ public class QueryAnalyzer {
 
     public String getHost() {
         return host;
+    }
+
+    public boolean isOutputFoundOnly() {
+        return outputFoundOnly;
     }
 
     public int getPort() {
@@ -401,6 +409,11 @@ public class QueryAnalyzer {
 //                LOGGER.debug("Longest query: " + queryLongest);
 //                LOGGER.debug("Query with largest memory: " + queryMostMem);
 //            }
+
+            // If skip empty result
+            if(task.getQueryCount() == 0 && analyzer.isOutputFoundOnly()) {
+                continue;
+            }
             writer.write(analyzer.prettyCsvLine(task));
             writer.newLine();
         }
