@@ -278,16 +278,16 @@ public class QueryAnalyzer {
 
     public String prettyCsvHeader() {
         StringBuilder header = new StringBuilder();
-        header.append("id, maxMemoryGB, TotalDuration, MaxDuration, Total Admission Wait, TotalInput, Total Output" +
-                ", File Formats, Not Found SQL Number, Total Query Count");
+        header.append("id,user,maxMemoryGB,TotalDuration,MaxDuration,Total Admission Wait,TotalInput,Total Output" +
+                ",File Formats,Not Found SQL Number,Total Query Count");
         if(!queueSetting.isEmpty()) {
-            header.append(", Max Resource Pool, Pool Utility, Proper Pool");
+            header.append(",Max Resource Pool,Pool Utility,Proper Pool");
         }
         return header.toString();
     }
 
     /**
-     * The String is formmatted as id, maxMemoryGB, TotalDuration, MaxDuration, Total Admission Wait, TotalInput, Total Output
+     * The String is formmatted as id, user, maxMemoryGB, TotalDuration, MaxDuration, Total Admission Wait, TotalInput, Total Output
      * , File Formats, Not Found SQL Number, Total Query Count(, Max Resource Pool, Pool Utility, Proper Pool)
      *
      * @param task

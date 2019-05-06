@@ -14,6 +14,7 @@ public class QueryAnalyzeUtil {
     public static final String HDFS_BYTES_WRITE = "hdfs_bytes_written";
     public static final String FILE_FORMATS = "file_formats";
     public static final String RESOURCE_POOL = "pool";
+    public static final String USER = "user";
 
     public static String parseStatementFromDetail(ApiImpalaQueryDetailsResponse detail) {
         String impalaSqlExtractionPattern = ".*Sql Statement:(.*)Coordinator:.*";
@@ -86,6 +87,8 @@ public class QueryAnalyzeUtil {
         if (pool != null) {
             metrics.addQueue(pool);
         }
+
+        metrics.addUser(query.getUser());
 
         return metrics;
     }

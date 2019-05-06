@@ -103,7 +103,7 @@ public class TaskInfoCollector {
     }
 
     /**
-     * The String is formmatted as id, maxMemoryGB, TotalDuration, MaxDuration, Total Admission Wait, TotalInput, Total Output
+     * The String is formmatted as id, user, maxMemoryGB, TotalDuration, MaxDuration, Total Admission Wait, TotalInput, Total Output
      * , File Formats, Not Found SQL Number, Total Query Count.
 
      * @return
@@ -134,6 +134,13 @@ public class TaskInfoCollector {
 
         StringBuilder csvBuilder = new StringBuilder();
         csvBuilder.append(id).append(",");
+
+        StringJoiner userSj = new StringJoiner("|");
+        for(String user : metrics.getUsers()) {
+            userSj.add(user);
+        }
+        csvBuilder.append(userSj.toString()).append(",");
+
         csvBuilder.append(metrics.getMaxMemoryGb()).append(",");
         csvBuilder.append(metrics.getDuration()).append(",");
         csvBuilder.append(metrics.getMaxDuration()).append(",");

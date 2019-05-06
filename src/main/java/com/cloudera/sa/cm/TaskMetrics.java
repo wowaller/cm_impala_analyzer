@@ -15,6 +15,7 @@ public class TaskMetrics {
     private long maxOutputBytes;
     private Set<String> fileFormats;
     private Set<String> queues;
+    private Set<String> users;
 
     public TaskMetrics() {
         maxMemoryGb = 0;
@@ -28,6 +29,7 @@ public class TaskMetrics {
         maxOutputBytes = 0;
         fileFormats = new HashSet<>();
         queues = new HashSet<>();
+        users = new HashSet<>();
     }
 
     public double getMaxMemoryGb() {
@@ -64,6 +66,10 @@ public class TaskMetrics {
 
     public Set<String> getQueues() {
         return queues;
+    }
+
+    public Set<String> getUsers() {
+        return users;
     }
 
     public double getMaxDuration() {
@@ -106,6 +112,10 @@ public class TaskMetrics {
         queues.add(queue);
     }
 
+    public void addUser(String user) {
+        users.add(user);
+    }
+
     public void updateMetrics(TaskMetrics task) {
         maxMemoryGb = Math.max(maxMemoryGb, task.maxMemoryGb);
         duration += task.duration;
@@ -118,6 +128,7 @@ public class TaskMetrics {
         maxOutputBytes = Math.max(maxOutputBytes, task.maxOutputBytes);
         fileFormats.addAll(task.fileFormats);
         queues.addAll(task.queues);
+        users.addAll(task.users);
     }
 
 }
