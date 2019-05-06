@@ -102,7 +102,13 @@ public class TaskInfoCollector {
         return metrics;
     }
 
-    public String getCSVResult() {
+    /**
+     * The String is formmatted as id, maxMemoryGB, TotalDuration, MaxDuration, Total Admission Wait, TotalInput, Total Output
+     * , File Formats, Not Found SQL Number, Total Query Count.
+
+     * @return
+     */
+    public String toString() {
         String queryMostMem = "";
         String queryLongest = "";
 
@@ -134,13 +140,20 @@ public class TaskInfoCollector {
         csvBuilder.append(metrics.getAdmissionDurtaion()).append(",");
         csvBuilder.append(metrics.getTotalInputBuytes()).append(",");
         csvBuilder.append(metrics.getTotalOutputBytes()).append(",");
-        csvBuilder.append(metrics.getTotalOutputBytes()).append(",");
 
-        StringJoiner sj = new StringJoiner("|");
+        StringJoiner formatSj = new StringJoiner("|");
         for(String format : metrics.getFileFormats()) {
-            sj.add(format);
+            formatSj.add(format);
         }
-        csvBuilder.append(sj.toString()).append(",");
+        csvBuilder.append(formatSj.toString()).append(",");
+
+        StringJoiner queueSj = new StringJoiner("|");
+        for(String queue : metrics.getQueues()) {
+            queueSj.add(queue);
+        }
+        csvBuilder.append(queueSj.toString()).append(",");
+
+
         csvBuilder.append(notFoundTbls()).append(",");
         csvBuilder.append(getQueryCount());
 
@@ -153,5 +166,17 @@ public class TaskInfoCollector {
 
     public int getQueryCount() {
         return found.values().size();
+    }
+
+    public String getId() {
+        return id;
+    }
+
+    public Map<String, QueryBase> getFound() {
+        return found;
+    }
+
+    public Set<String> getMissed() {
+        return missed;
     }
 }

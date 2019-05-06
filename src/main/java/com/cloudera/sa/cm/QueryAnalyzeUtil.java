@@ -13,6 +13,7 @@ public class QueryAnalyzeUtil {
     public static final String HDFS_BYTES_READ = "hdfs_bytes_read";
     public static final String HDFS_BYTES_WRITE = "hdfs_bytes_written";
     public static final String FILE_FORMATS = "file_formats";
+    public static final String RESOURCE_POOL = "pool";
 
     public static String parseStatementFromDetail(ApiImpalaQueryDetailsResponse detail) {
         String impalaSqlExtractionPattern = ".*Sql Statement:(.*)Coordinator:.*";
@@ -74,12 +75,16 @@ public class QueryAnalyzeUtil {
         metrics.updateInputBytes(inputBytes);
         metrics.updateOutputBytes(outputBytes);
 
-
         String formatString = query.getAttributes().get(FILE_FORMATS);
         if (formatString != null) {
             for (String format : formatString.split(",")) {
                 metrics.addInputFormat(format);
             }
+        }
+
+        String pool = query.getAttributes().get(RESOURCE_POOL);
+        if (pool != null) {
+            metrics.addQueue(pool);
         }
 
         return metrics;

@@ -7,8 +7,6 @@ import java.io.BufferedReader;
 import java.io.FileReader;
 import java.io.IOException;
 import java.util.*;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 
 public class OMTextTaskReader implements TaskReader {
 
@@ -20,8 +18,9 @@ public class OMTextTaskReader implements TaskReader {
     public static final String DEFAULT_SKIP_INPUT_HEADER = "false";
 
     public static final int JOB_ID_INDEX = 3;
+    public static final int MODELLING_STATE_INDEX = 7;
     public static final int TARGET_DB_NAME = 5;
-    public static final int INPUT_TABLE = 6;
+    public static final int TARGET_TABLE = 6;
     public static final int SOURCE_TABLE = 15;
 
     private Map<String, Set<String>> srcTbls;
@@ -82,7 +81,7 @@ public class OMTextTaskReader implements TaskReader {
 
         // Output table does not have DB information. So add DB name to the target table.
         // Remove all " in the original String
-        String targetString = validateTarget(split[INPUT_TABLE]);
+        String targetString = validateTarget(split[TARGET_TABLE]);
         String[] rawTarTbls = targetString.split(DEFAULT_EXCLUDE_TBL_LIST_DELIMITER);
         Set<String> targetTbls = new HashSet<>();
         for(String target : rawTarTbls) {
@@ -102,6 +101,21 @@ public class OMTextTaskReader implements TaskReader {
             tarTbls.get(id).addAll(targetTbls);
         } else {
             tarTbls.put(id, targetTbls);
+        }
+    }
+
+    private String[] validateParse(String line) {
+        String[] split = line.split(DEFAULT_INPUT_SPLIT);
+
+
+        if(split.length < SOURCE_TABLE + 1) {
+            LOGGER.error("Error parsing line " + line);
+            return null;
+        } else if(!split[MODELLING_STATE_INDEX].equalsIgnoreCase("model_success")){
+            LOGGER.error("Task failed in line " + line);
+            return null;
+        } else {
+            return split;
         }
     }
 

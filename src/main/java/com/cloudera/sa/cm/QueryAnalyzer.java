@@ -6,7 +6,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.*;
-import java.math.BigDecimal;
 import java.util.*;
 
 public class QueryAnalyzer {
@@ -31,9 +30,10 @@ public class QueryAnalyzer {
     public static final String QUERY_FILTER = "filter";
     public static final String DEFAULT_QUERY_FILTER = "";
     public static final String EXCLUDE_TBL_LIST = "excludeTbls";
-    public static final String DEFAULT_EXCLUDE_TBL_LIST_DELIMITER = ",";
+    public static final String DEFAULT_LIST_DELIMITER = ",";
     public static final String IGNORE_DB_NAME = "ignore_db";
     public static final String DEFAULT_IGNORE_DB_NAME = "false";
+    public static final String IMPALA_RESOURCE_POOL_LIST = "resource_pool";
 
     public static final String DEFAULT_INPUT_SPLIT = "\\|";
 
@@ -60,6 +60,8 @@ public class QueryAnalyzer {
 
     private Set<String> exclude;
 
+    private Map<String, Double> queueSetting;
+
     public QueryAnalyzer(String input, Properties props) throws ClassNotFoundException, IOException, InstantiationException, IllegalAccessException {
         host = props.getProperty(CM_HOST);
         port = Integer.parseInt(props.getProperty(CM_PORT));
@@ -82,11 +84,20 @@ public class QueryAnalyzer {
         allQueries = new HashMap<>();
         exclude = new HashSet<>();
         if(excludeString != null) {
-            exclude.addAll(Arrays.asList(excludeString.split(DEFAULT_EXCLUDE_TBL_LIST_DELIMITER)));
+            exclude.addAll(Arrays.asList(excludeString.split(DEFAULT_LIST_DELIMITER)));
         }
 
         reader = TaskReaderFactory.getReader(input, props);
         ignoreDB = Boolean.parseBoolean(props.getProperty(IGNORE_DB_NAME, DEFAULT_IGNORE_DB_NAME));
+
+        queueSetting = new HashMap<>();
+        String queueString = props.getProperty(IMPALA_RESOURCE_POOL_LIST);
+        for(String pool : queueString.split(DEFAULT_LIST_DELIMITER)) {
+            String[] poolSplit = pool.split(":");
+            String poolName = poolSplit[0];
+            double memLimit = Double.parseDouble(poolSplit[1]);
+            queueSetting.put(poolName, memLimit);
+        }
     }
 
     public Map<String, QueryBase> getQueries() throws Exception {
@@ -262,8 +273,65 @@ public class QueryAnalyzer {
         return task;
     }
 
+
+    public String prettyCsvHeader() {
+        StringBuilder header = new StringBuilder();
+        header.append("id, maxMemoryGB, TotalDuration, MaxDuration, Total Admission Wait, TotalInput, Total Output" +
+                ", File Formats, Not Found SQL Number, Total Query Count");
+        if(!queueSetting.isEmpty()) {
+            header.append(", Max Resource Pool, Pool Utility, Proper Pool");
+        }
+        return header.toString();
+    }
+
+    /**
+     * The String is formmatted as id, maxMemoryGB, TotalDuration, MaxDuration, Total Admission Wait, TotalInput, Total Output
+     * , File Formats, Not Found SQL Number, Total Query Count(, Max Resource Pool, Pool Utility, Proper Pool)
+     *
+     * @param task
+     * @return
+     */
     public String prettyCsvLine(TaskInfoCollector task) {
-        return task.getCSVResult();
+
+        StringBuilder output = new StringBuilder();
+        output.append(task.toString());
+
+        if(!queueSetting.isEmpty()) {
+            Set<String> pools = task.getMetrics().getQueues();
+            String largest = "";
+            double maxQueueResource = 0;
+
+            for(String pool : pools) {
+                double resource = queueSetting.get(pool);
+                if(resource > maxQueueResource) {
+                    largest = pool;
+                    maxQueueResource = resource;
+                }
+            }
+
+            double utility = task.getMetrics().getMaxMemoryGb() / maxQueueResource;
+
+            String properPool = "Too large";
+            double waste = Double.MAX_VALUE;
+
+            for(Map.Entry<String, Double> pool : queueSetting.entrySet()) {
+                if(pool.getValue() > task.getMetrics().getMaxMemoryGb()) {
+                    double currentWaste = pool.getValue() - task.getMetrics().getMaxMemoryGb();
+                    if (currentWaste < waste) {
+                        waste = currentWaste;
+                        properPool = pool.getKey();
+                    }
+                }
+            }
+
+
+            output.append(",").append(largest);
+            output.append(",").append(utility);
+            output.append(",").append(properPool);
+        }
+
+
+        return output.toString();
     }
 
     public static void main(String[] args) throws Exception {
@@ -287,11 +355,13 @@ public class QueryAnalyzer {
 
         LOGGER.info("Finished collecting queryies. Trying to search jobs.");
 
+        writer.write(analyzer.prettyCsvHeader());
+        writer.newLine();
         while(analyzer.hasNextTask()) {
 //            String[] split = line.split(DEFAULT_INPUT_SPLIT);
 //            String id = split[0];
-//            Set<String> targetTbls = new HashSet<>(Arrays.asList(split[1].split(DEFAULT_EXCLUDE_TBL_LIST_DELIMITER)));
-//            Set<String> sourceTbls = new HashSet<>(Arrays.asList(split[2].split(DEFAULT_EXCLUDE_TBL_LIST_DELIMITER)));
+//            Set<String> targetTbls = new HashSet<>(Arrays.asList(split[1].split(DEFAULT_LIST_DELIMITER)));
+//            Set<String> sourceTbls = new HashSet<>(Arrays.asList(split[2].split(DEFAULT_LIST_DELIMITER)));
 //            String id = reader.next();
 //            LOGGER.info("Searching for query:" + id);
 //            SearchTask task = new SearchTask(id, reader.nextTargets(), reader.nextSources(), ignoreDB);
