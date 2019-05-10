@@ -1,18 +1,21 @@
 # cm_impala_analyzer
 Project to collect Impala query information from CM using Java API and aggregate information for each job like memory, duration. Also provide advice on which resource pool to use for each job.
-##Directory
+
+## Directory
 * src: Source code for the project
 * bin: Running script to launch the analyer.
 * conf: Sample configuration.
 * lib: Necessary libaray not on maven. Mostly Impala FE related package.
-##How to compile
+
+## How to compile
 Maven is required. To compile:
 * mvn package
-##How to run
+
+## How to run
 Using run.sh script to launch the job.
 * run.sh <properties-file> <job-input-path> <result-path>
 
-Input properties:
+### Input properties:
 * properties-file: Properties with job configuration.
 * job-input-path: The input file with Job information.
 * result-path: CSV format file to store the result.
