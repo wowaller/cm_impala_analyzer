@@ -20,7 +20,7 @@ Using run.sh script to launch the job.
 * job-input-path: The input file with Job information.
 * result-path: CSV format file to store the result.
 
-### Properties
+### Configuration
 * cm_host: Host of Cloudera Manager.
 * cm_port: Port of Cloudera Manager.
 * cluster_name: Cluster name on CM. Normally cluster.
@@ -44,3 +44,6 @@ Using run.sh script to launch the job.
 For now, two kinds of reader provided as 
 * DefaultTaskReader: Input file contain lines as: ID \t target_table1,target_table2,... \t source_table1,source_table2,...
 * OMTextTaskReader: Direct save of OM export excel to \t split text file.
+
+### Output
+CSV formatted output file with one job each line.
