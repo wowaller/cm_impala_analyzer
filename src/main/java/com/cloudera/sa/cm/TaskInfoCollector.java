@@ -223,7 +223,7 @@ public class TaskInfoCollector {
 
     /**
      * The String is formmatted as id, user, maxMemoryGB, TotalDuration, MaxDuration, Total Admission Wait, TotalInput, Total Output
-     * , File Formats, Not Found SQL Number,Not Found Source Tables,Total Query Count.
+     * , File Formats, Found Source Tables, Not Found Source Tables,Total Query Count.
      * @return Value string in csv format.
      */
     public String toString() {
@@ -279,7 +279,7 @@ public class TaskInfoCollector {
         csvBuilder.append(queueSj.toString()).append(",");
 
 
-        csvBuilder.append(notFoundTbls()).append(",");
+        csvBuilder.append(getSrcFound().size()).append(",");
         csvBuilder.append(getMissedSrc().size()).append(",");
         csvBuilder.append(getQueryCount());
 
@@ -335,6 +335,15 @@ public class TaskInfoCollector {
         ret.removeAll(foundSrcTbls);
         return ret;
     }
+
+    /**
+     * Get source tables seen.
+     * @return
+     */
+    public Set<String> getSrcFound() {
+        return foundSrcTbls;
+    }
+
 
     /**
      * Check if all source tables found.
