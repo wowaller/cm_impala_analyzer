@@ -119,7 +119,7 @@ public class QueryAnalyzer {
 
         String excludeKeyString = props.getProperty(EXCLUDE_KEY_LIST);
         excludeKeys = new HashSet<>();
-        if(excludeString != null) {
+        if(excludeKeyString != null) {
             excludeKeys.addAll(Arrays.asList(excludeKeyString.split(DEFAULT_LIST_DELIMITER)));
         }
 
