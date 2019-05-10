@@ -60,9 +60,13 @@ public class TaskInfoCollector {
                     && !found.containsKey(target) && !inSrc(target) && !hasKeyWd(target, excludeKey)) {
                 // Only deal with found table and not in source / exclude / found list
                 QueryBase current = allQueries.get(target);
-                found.put(target, current);
-                metrics.updateMetrics(current.getMetrics());
-                dfsTraverse(current, found, allQueries, excludeTbls, excludeKey);
+
+                // If all the source tables has excludeKey then do nothing.
+                if(!allExclude(current.getSource(), excludeKey, excludeTbls)) {
+                    found.put(target, current);
+                    metrics.updateMetrics(current.getMetrics());
+                    dfsTraverse(current, found, allQueries, excludeTbls, excludeKey);
+                }
             } else if (inSrc(target)) {
                 recordFoundSrc(target);
             } else if (!allQueries.containsKey(target) && !hasKeyWd(target, excludeKey)
@@ -90,8 +94,12 @@ public class TaskInfoCollector {
                     && !found.containsKey(dependency) && !inSrc(dependency) && !hasKeyWd(dependency, excludeKey)) {
                 // Only deal with found table and not in source / exclude / found list
                 QueryBase value = allQueries.get(dependency);
-                found.put(dependency, value);
-                metrics.updateMetrics(value.getMetrics());
+
+                // If all the source tables has excludeKey then do nothing.
+                if(!allExclude(value.getSource(), excludeKey, excludeTbls)) {
+                    found.put(dependency, value);
+                    metrics.updateMetrics(value.getMetrics());
+                }
                 dfsTraverse(value, found, allQueries, excludeTbls, excludeKey);
             } else if (inSrc(dependency)) {
                 recordFoundSrc(dependency);
@@ -124,10 +132,14 @@ public class TaskInfoCollector {
                     && !found.containsKey(current) && !inSrc(current)  && !hasKeyWd(current, excludeKey)) {
                 // Only deal with found table and not in source / exclude / found list
                 QueryBase value = allQueries.get(current);
-                found.put(current, value);
-                metrics.updateMetrics(value.getMetrics());
-                for(String dependency : value.getSource()) {
-                    tableToScan.push(dependency);
+
+                // If all the source tables has excludeKey then do nothing.
+                if(!allExclude(value.getSource(), excludeKey, excludeTbls)) {
+                    found.put(current, value);
+                    metrics.updateMetrics(value.getMetrics());
+                    for (String dependency : value.getSource()) {
+                        tableToScan.push(dependency);
+                    }
                 }
             } else if (inSrc(current)) {
                 recordFoundSrc(current);
@@ -154,6 +166,23 @@ public class TaskInfoCollector {
             String tblNoDb = tbl.split("\\.")[1];
             return sourceTbls.contains(tblNoDb);
         }
+    }
+
+    /**
+     * Is the all tables contain key words.
+     * @param tbls The set tables.
+     * @param excludeKey Keys to match.
+     * @return True if the table has the key information.
+     */
+    public boolean allExclude(Set<String> tbls, Set<String> excludeKey, Set<String> excludeTbls) {
+        Set<String> tblsNotExclude = new HashSet<>(tbls);
+        tblsNotExclude.removeAll(excludeTbls);
+        for(String tbl : tblsNotExclude) {
+            if(!hasKeyWd(tbl, excludeKey)) {
+                return false;
+            }
+        }
+        return true;
     }
 
     /**
