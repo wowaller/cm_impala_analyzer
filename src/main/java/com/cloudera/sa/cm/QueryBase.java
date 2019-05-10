@@ -23,6 +23,9 @@ import java.util.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+/**
+ * Class to parse SQL and record metrics.
+ */
 public class QueryBase {
 
     private static Logger LOGGER = LoggerFactory.getLogger(QueryBase.class);
@@ -53,6 +56,11 @@ public class QueryBase {
         parseImpala(statement.toLowerCase());
     }
 
+    /**
+     * Used to check SQL for Hive SQLs.
+     * @param statement SQL String.
+     * @return Validated SQL String.
+     */
     public static String validate(String statement) {
         String createTableAsPattern = "(create\\s+table\\s+.*\\s+(stored\\s+as\\s+\\w+\\s+)?as\\s+)(\\()(.*)(\\))\\s*$";
         Pattern p = Pattern.compile(createTableAsPattern);
@@ -68,14 +76,30 @@ public class QueryBase {
         }
     }
 
+    /**
+     * Get source tables from SQL.
+     * @return Source tables.
+     */
     public Set<String> getSource() {
         return source;
     }
 
+    /**
+     * Get target tables from SQL.
+     * @return Target tables.
+     */
     public Set<String> getTarget() {
         return target;
     }
 
+    /**
+     * Use JSQL API to parse source/target tables.
+     * @param statement SQL String.
+     * @throws SemanticException
+     * @throws ParserException
+     * @throws JSQLParserException
+     */
+    @Deprecated
     private void parseJSQL(String statement) throws SemanticException, ParserException, JSQLParserException {
         Statement stmt = CCJSqlParserUtil.parse(statement);
 
@@ -95,6 +119,11 @@ public class QueryBase {
         }
     }
 
+    /**
+     * Use Impala FE library to parse Impala SQL.
+     * @param statement  SQL String.
+     * @throws Exception
+     */
     private void parseImpala(String statement) throws Exception {
         SqlScanner scanner = new SqlScanner(new StringReader(statement));
         SqlParser parser = new SqlParser(scanner);
@@ -124,10 +153,20 @@ public class QueryBase {
         }
     }
 
+    /**
+     * Get table name in the format as dbname.tablename.
+     * @param table TableRef instance from Impala FE.
+     * @return
+     */
     private String getTableName(TableRef table) {
         return ToSqlUtils.getPathSql(table.getPath());
     }
 
+    /**
+     * Parse the query part of Impala SQL. Normally something after select / with expression.
+     * @param statement QueryStmt instance from Impala FE.
+     * @throws Exception
+     */
     private void parseImpalaQuery(QueryStmt statement) throws Exception {
         List<TableRef> tables = new ArrayList<>();
         statement.collectTableRefs(tables);
@@ -144,6 +183,13 @@ public class QueryBase {
         }
     }
 
+    /**
+     * Use Hive API to parse source/target tables.
+     * @param statement SQL String.
+     * @throws SemanticException
+     * @throws ParseException
+     */
+    @Deprecated
     private void parseHive(String statement) throws SemanticException, ParseException {
         ParseDriver pd = new ParseDriver();
         ASTNode ast = pd.parse(statement);
@@ -166,6 +212,9 @@ public class QueryBase {
         source.remove(cteAlias);
     }
 
+    /**
+     * Used for Hive statement parse.
+     */
     private class TableNameNodeProcessor implements  NodeProcessor {
         @Override
         public Object process(Node nd, Stack<Node> stack, NodeProcessorCtx procCtx, Object... nodeOutputs) throws SemanticException {
@@ -199,10 +248,18 @@ public class QueryBase {
         }
     }
 
+    /**
+     * Get the SQL statement string.
+     * @return SQL statement string.
+     */
     public String getStatement() {
         return statement;
     }
 
+    /**
+     * Get the metrics.
+     * @return TaskMetrics
+     */
     public TaskMetrics getMetrics() {
         return metrics;
     }

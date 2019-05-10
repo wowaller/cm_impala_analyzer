@@ -1,2 +1,15 @@
 1. Query order: the oldest table with same target table will be kept rather than latest.
+    -- Also add option to ignore db name. -- WFT
 2. File input/output format needs to be confirmed.
+    -- Input can be \t delimited file; output can be CSV.
+    -- Add queue information for utility.
+    -- Check if more information should be added.
+      -- Add queue information to check if allocation is enough and provide recommendation.
+      -- Output admission wait information.
+      -- Input / Output bytes.
+      -- # Queries
+      -- Is search complete? Out of bound?
+      -- File format check
+    -- Add output imply if all source found/not listed search.
+3. Multiple insert expression -- TBD
+4. Filter on table name to ignore

@@ -1,7 +1,8 @@
 package com.cloudera.sa.cm;
 
+@Deprecated
 public class AnalyzerConf {
-
+    // All configuration moved into each class.
     public static final String CM_HOST = "cm_host";
     public static final String CM_PORT = "cm_port";
     public static final String CLUSTER_NAME = "cluster_name";

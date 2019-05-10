@@ -27,6 +27,9 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Base64;
 
+/**
+ * Class to get Impala queries from CM.
+ */
 public class ImpalaQuerySearch {
     private static final Logger LOGGER = LoggerFactory.getLogger(ImpalaQuerySearch.class);
 
@@ -58,7 +61,14 @@ public class ImpalaQuerySearch {
         return getCMClient(host, port, version, username, password, false, "");
     }
 
-
+    /**
+     * Construct URL string for basic CM API.
+     * @param host CM host.
+     * @param port CM port.
+     * @param version CM API version, for example, v19 for cm5.15
+     * @param isSSLEnabled Is ssl enabled on CM.
+     * @return HTTP URL for cm rest API.
+     */
     public String getBaseUrl(String host, Integer port, String version, Boolean isSSLEnabled) {
         String protocol = "http";
         if (isSSLEnabled) {
@@ -67,7 +77,17 @@ public class ImpalaQuerySearch {
         return protocol + "://" + host + ":" + port + "/api/" + version;
     }
 
-
+    /**
+     * Construct ApiClient as the client class in CM JAVA API.
+     * @param host CM host.
+     * @param port CM port.
+     * @param version CM API version, for example, v19 for cm5.15.
+     * @param username User name to log in to CM.
+     * @param password Password to log in to CM.
+     * @param isSSLEnabled Is ssl enabled on CM.
+     * @param pemPath The ca cert for SSL.
+     * @return ApiClient for CM Java API.
+     */
     public ApiClient getCMClient(String host, Integer port, String version, String username, String password,
                                 Boolean isSSLEnabled, String pemPath) {
         ApiClient cmClient = Configuration.getDefaultApiClient();
@@ -90,6 +110,18 @@ public class ImpalaQuerySearch {
         return cmClient;
     }
 
+    /**
+     * Directly get query response from CM API.
+     * @param clusterName Cluster name. Usually cluster.
+     * @param serviceName Impala Service name. Usually impala.
+     * @param filter The filter for Impala query.
+     * @param from ISO8601 format time for the start time of query.
+     * @param to ISO8601 format time for the end time of query.
+     * @param limit Result limit. Max value is 1000.
+     * @param offset Start of next query. Since max limit is 1000, we will need several queries with incremental offset.
+     * @return Results of each query.
+     * @throws ApiException
+     */
     public ApiImpalaQueryResponse queryRaw(String clusterName, String serviceName, String filter, String from,
                                             String to, int limit, int offset) throws ApiException {
         ApiImpalaQueryResponse result;
@@ -104,6 +136,14 @@ public class ImpalaQuerySearch {
         return result;
     }
 
+    /**
+     * Get detailed query information. Useful if SQL is too long.
+     * @param clusterName Cluster name. Usually cluster.
+     * @param serviceName Service name. Usually impala.
+     * @param queryId The ID for detailed Impala query from CM API.
+     * @return Impala detailed query response.
+     * @throws ApiException
+     */
     public ApiImpalaQueryDetailsResponse queryDetailRaw(String clusterName, String serviceName, String queryId) throws ApiException {
         ApiImpalaQueryDetailsResponse result;
 
@@ -117,6 +157,14 @@ public class ImpalaQuerySearch {
         return result;
     }
 
+    /**
+     * Use HTTP request instead of JAVA API to get detailed information. It is useful as CM JAVA has some problem
+     * with query detailed request. After that, the response string is packaged as a detialed query response.
+     * @param clusterName Cluster name. Usually cluster.
+     * @param serviceName Service name. Usually impala.
+     * @param queryId The ID for detailed Impala query from CM API.
+     * @return Impala detailed query response.
+     */
     public ApiImpalaQueryDetailsResponse queryDetailThroughHTTP(String clusterName, String serviceName, String queryId) {
         String auth = username + ":" + password;
         byte[] encodedAuth = Base64.getUrlEncoder().encode(auth.getBytes(Charset.forName("US-ASCII")));
@@ -156,6 +204,17 @@ public class ImpalaQuerySearch {
         }
     }
 
+    /**
+     * Query list of Impala queries. Note that the queries can be too long to store the whole query.
+     * Use queryDetailThroughHTTP to get the whole SQL with ID returned.
+     * @param clusterName Cluster name. Usually cluster.
+     * @param serviceName Service name. Usually impala.
+     * @param filter The filter for Impala query.
+     * @param from ISO8601 format time for the start time of query.
+     * @param to ISO8601 format time for the end time of query.
+     * @return QuerySearchResult to iterate query result.
+     * @throws ApiException
+     */
     public QuerySearchResult query(String clusterName, String serviceName, String filter, String from, String to) throws ApiException {
         return new QuerySearchResult(cmClient, clusterName, serviceName, filter, from, to);
     }

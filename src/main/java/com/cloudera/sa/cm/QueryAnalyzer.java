@@ -8,34 +8,57 @@ import org.slf4j.LoggerFactory;
 import java.io.*;
 import java.util.*;
 
+/**
+ * Main class to performance the analyze.
+ */
 public class QueryAnalyzer {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(QueryAnalyzer.class);
 
+    //configurations from input file.
+
+    // CM host.
     public static final String CM_HOST = "cm_host";
+    // CM port.
     public static final String CM_PORT = "cm_port";
+    // Cluster name on CM.
     public static final String CLUSTER_NAME = "cluster_name";
+    // Service name on CM.
     public static final String SERVICE_NAME = "service_name";
+    // Username for CM query.
     public static final String USERNAME = "username";
+    // Password for CM query.
     public static final String PASSWORD = "password";
+    // API version for CM API.
     public static final String API_VERSION = "api_version";
 
+    // Is SSL enabled on CM HTTP.
     public static final String ENABLE_SSL = "enable_ssl";
     public static final String DEFAULT_ENABLE_SSL = "false";
+    // CA cert path if SSL enabled.
     public static final String PEM_PATH = "ssl_pem_path";
     public static final String DEFAULT_PEM_PATH = "";
 
+    // Start time of searched query.
     public static final String QUERY_START_TIME = "start_time";
+    // End time of searched query.
     public static final String QUERY_END_TIME = "end_time";
+    // Filter to perform the CM query.
     public static final String QUERY_FILTER = "filter";
     public static final String DEFAULT_QUERY_FILTER = "";
+    // Tables not search. Normally dimensional tables.
     public static final String EXCLUDE_TBL_LIST = "excludeTbls";
+    public static final String EXCLUDE_KEY_LIST = "excludeKeyWords";
     public static final String DEFAULT_LIST_DELIMITER = ",";
+    // Input source table has DB information or not. Just in case there's no information for DB in source table.
     public static final String IGNORE_DB_NAME = "ignore_db";
     public static final String DEFAULT_IGNORE_DB_NAME = "false";
+    // Resource pool configuration to provide recommendation. Format: pool1:memlimit1,pool2:memlimit2,...
     public static final String IMPALA_RESOURCE_POOL_LIST = "resource_pool";
+    // Output information of only found jobs. Do not output those that has no SQL found.
     public static final String FOUND_TASK_ONLY = "found_only";
     public static final String DEFAULT_FOUND_TASK_ONLY = "false";
+    // Output information only if all source tables found.
     public static final String ALL_SOURCE_FOUND = "all_source_only";
     public static final String DEFAULT_ALL_SOURCE_FOUND = "false";
 
@@ -64,7 +87,8 @@ public class QueryAnalyzer {
 
     private Map<String, QueryBase> allQueries;
 
-    private Set<String> exclude;
+    private Set<String> excludeTbls;
+    private Set<String> excludeKeys;
 
     private Map<String, Double> queueSetting;
 
@@ -88,9 +112,15 @@ public class QueryAnalyzer {
         String excludeString = props.getProperty(EXCLUDE_TBL_LIST);
 
         allQueries = new HashMap<>();
-        exclude = new HashSet<>();
+        excludeTbls = new HashSet<>();
         if(excludeString != null) {
-            exclude.addAll(Arrays.asList(excludeString.split(DEFAULT_LIST_DELIMITER)));
+            excludeTbls.addAll(Arrays.asList(excludeString.split(DEFAULT_LIST_DELIMITER)));
+        }
+
+        String excludeKeyString = props.getProperty(EXCLUDE_KEY_LIST);
+        excludeKeys = new HashSet<>();
+        if(excludeString != null) {
+            excludeKeys.addAll(Arrays.asList(excludeKeyString.split(DEFAULT_LIST_DELIMITER)));
         }
 
         reader = TaskReaderFactory.getReader(input, props);
@@ -110,6 +140,11 @@ public class QueryAnalyzer {
         }
     }
 
+    /**
+     * Get all queries from CM.
+     * @return Map of Queries with target table as the key and QueryBase as value.
+     * @throws Exception
+     */
     public Map<String, QueryBase> getQueries() throws Exception {
         QuerySearchResult result = client.query(clusterName, serviceName, filter, from, to);
 
@@ -130,6 +165,7 @@ public class QueryAnalyzer {
                 LOGGER.debug("Query info: memory=" + metrics.getMaxMemoryGb() + "GB, duration=" + metrics.getDuration() + "s");
             }
 
+            // If the SQL too long,
             if (statement.endsWith("...")) {
                 LOGGER.info("Query too long for cm. Checking details for query " + query.getQueryId());
                 try {
@@ -163,6 +199,7 @@ public class QueryAnalyzer {
                         if(LOGGER.isDebugEnabled()) {
                             LOGGER.debug(target);
                         }
+                        // Add queries to all target table.  Normally 1.
                         if(!allQueries.containsKey(target)) {
                             // We keep the latest SQL if duplicates found.
                             allQueries.put(target, node);
@@ -179,119 +216,238 @@ public class QueryAnalyzer {
         return allQueries;
     }
 
+    /**
+     * Get CM host.
+     * @return CM host.
+     */
     public String getHost() {
         return host;
     }
 
+    /**
+     * Should only output jobs with SQL found.
+     * @return
+     */
     public boolean isOutputFoundOnly() {
         return outputFoundOnly;
     }
 
+    /**
+     * Shouold only output jobs if all source tabls found.
+     * @return
+     */
     public boolean isAllSrcFoundOnly() {
         return allSrcFoundOnly;
     }
 
+    /**
+     * Get CM port.
+     * @return Cm port.
+     */
     public int getPort() {
         return port;
     }
 
+    /**
+     * Get API version.
+     * @return
+     */
     public String getVersion() {
         return version;
     }
 
+    /**
+     * If SSL enabled.
+     * @return
+     */
     public Boolean getSSLEnabled() {
         return isSSLEnabled;
     }
 
+    /**
+     * Get CA cert path.
+     * @return CA cert path.
+     */
     public String getPemPath() {
         return pemPath;
     }
 
+    /**
+     * Get cluster name.
+     * @return Cluster name.
+     */
     public String getClusterName() {
         return clusterName;
     }
 
+    /**
+     * Get service name.
+     * @return Service name.
+     */
     public String getServiceName() {
         return serviceName;
     }
 
+    /**
+     * Get search start time.
+     * @return Search start time.
+     */
     public String getFrom() {
         return from;
     }
 
+    /**
+     * Get search end time.
+     * @return Search end time.
+     */
     public String getTo() {
         return to;
     }
 
+    /**
+     * Get search filter.
+     * @return Search filter.
+     */
     public String getFilter() {
         return filter;
     }
 
+    /**
+     * Set CM host name.
+     * @param host CM host name.
+     */
     public void setHost(String host) {
         this.host = host;
     }
 
+    /**
+     * Set CM port.
+     * @param port CM port.
+     */
     public void setPort(int port) {
         this.port = port;
     }
 
+    /**
+     * Set version.
+     * @param version CM API version.
+     */
     public void setVersion(String version) {
         this.version = version;
     }
 
+    /**
+     * Check SSL enabled.
+     * @param SSLEnabled SSL enabled.
+     */
     public void setSSLEnabled(Boolean SSLEnabled) {
         isSSLEnabled = SSLEnabled;
     }
 
+    /**
+     * Set ca cert path.
+     * @param pemPath CA cert path.
+     */
     public void setPemPath(String pemPath) {
         this.pemPath = pemPath;
     }
 
+    /**
+     * Set cluster name.
+     * @param clusterName Cluster name.
+     */
     public void setClusterName(String clusterName) {
         this.clusterName = clusterName;
     }
 
+    /**
+     * Set service name.
+     * @param serviceName Service name.
+     */
     public void setServiceName(String serviceName) {
         this.serviceName = serviceName;
     }
 
+    /**
+     * Set search start time.
+     * @param from Search start time.
+     */
     public void setFrom(String from) {
         this.from = from;
     }
 
+    /**
+     * Set search end time.
+     * @param to Search end time.
+     */
     public void setTo(String to) {
         this.to = to;
     }
 
+    /**
+     * Set search filter.
+     * @param filter Search filter.
+     */
     public void setFilter(String filter) {
         this.filter = filter;
     }
 
+    /**
+     * Get all found queries.
+     * @return All found queries.
+     */
     public Map<String, QueryBase> getAllQueries() {
         return allQueries;
     }
 
+    /**
+     * Set all queries.
+     * @param allQueries All queries.
+     */
     public void setAllQueries(Map<String, QueryBase> allQueries) {
         this.allQueries = allQueries;
     }
 
-    public Set<String> getExclude() {
-        return exclude;
+    /**
+     * Get tables not to search.
+     * @return Tables not search.
+     */
+    public Set<String> getExcludeTbls() {
+        return excludeTbls;
     }
 
+    /**
+     * Get key words for tables not to search.
+     * @return
+     */
+    public Set<String> getExcludeKeys() {
+        return excludeKeys;
+    }
+
+    /**
+     * Check if has more task.
+     * @return True if more task.
+     */
     public boolean hasNextTask() {
         return reader.hasNext();
     }
 
+    /**
+     * Get next task from input file and find all SQLs in CM response.
+     * @return
+     */
     public TaskInfoCollector nextTask() {
         String id = reader.next();
         LOGGER.info("Searching for query:" + id);
         TaskInfoCollector task = new TaskInfoCollector(id, reader.nextTargets(), reader.nextSources(), ignoreDB);
-        task.findSqlWfs(getAllQueries(), getExclude());
+        task.findSqlWfs(getAllQueries(), getExcludeTbls(), getExcludeKeys());
         return task;
     }
 
-
+    /**
+     * Print header for csv output.
+     * @return Header string.
+     */
     public String prettyCsvHeader() {
         StringBuilder header = new StringBuilder();
         header.append("id,user,maxMemoryGB,TotalDuration,MaxDuration,Total Admission Wait,Total Input,Total Output" +
@@ -306,8 +462,8 @@ public class QueryAnalyzer {
      * The String is formmatted as id, user, maxMemoryGB, TotalDuration, MaxDuration, Total Admission Wait, TotalInput, Total Output
      * , File Formats,Pools,Not Found SQL Number, Not Found Source Tables, Total Query Count(, Max Resource Pool, Pool Utility, Proper Pool)
      *
-     * @param task
-     * @return
+     * @param task Collected task information to form the CSV.
+     * @return CSV parsed String.
      */
     public String prettyCsvLine(TaskInfoCollector task) {
 
@@ -364,6 +520,7 @@ public class QueryAnalyzer {
         props.load(new FileInputStream(args[0]));
 
 
+        // Read all OM input and search for queries.
         QueryAnalyzer analyzer = new QueryAnalyzer(args[1], props);
         Map<String, QueryBase> allNodes = analyzer.getQueries();
 
@@ -373,6 +530,7 @@ public class QueryAnalyzer {
 
         LOGGER.info("Finished collecting queryies. Trying to search jobs.");
 
+        // Form the output.
         writer.write(analyzer.prettyCsvHeader());
         writer.newLine();
         while(analyzer.hasNextTask()) {
@@ -383,7 +541,7 @@ public class QueryAnalyzer {
 //            String id = reader.next();
 //            LOGGER.info("Searching for query:" + id);
 //            SearchTask task = new SearchTask(id, reader.nextTargets(), reader.nextSources(), ignoreDB);
-//            List<QueryBase> job = task.findSqlWfs(analyzer.getAllQueries(), analyzer.getExclude());
+//            List<QueryBase> job = task.findSqlWfs(analyzer.getAllQueries(), analyzer.getExcludeTbls());
             TaskInfoCollector task = analyzer.nextTask();
 
 //            String queryMostMem = "";

@@ -5,6 +5,10 @@ import sun.java2d.pipe.SpanShapeRenderer;
 import java.util.LinkedList;
 import java.util.List;
 
+/**
+ * Basic class to construct tree.
+ * @param <T>
+ */
 public class SimpleTreeNode<T> {
 
     private SimpleTreeNode<T> parent;

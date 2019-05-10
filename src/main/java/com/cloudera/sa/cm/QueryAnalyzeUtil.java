@@ -8,6 +8,7 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 public class QueryAnalyzeUtil {
+    // Attributes for one impala query.
     public static final String MEMORY_PER_NODE_PEAK = "memory_per_node_peak";
     public static final String ADMISSION_WAIT = "admission_wait";
     public static final String HDFS_BYTES_READ = "hdfs_bytes_read";
@@ -16,6 +17,11 @@ public class QueryAnalyzeUtil {
     public static final String RESOURCE_POOL = "pool";
     public static final String USER = "user";
 
+    /**
+     * Collect statement from Impala detail response.
+     * @param detail ApiImpalaQueryDetailsResponse from CM API.
+     * @return String from detailed response.
+     */
     public static String parseStatementFromDetail(ApiImpalaQueryDetailsResponse detail) {
         String impalaSqlExtractionPattern = ".*Sql Statement:(.*)Coordinator:.*";
         Pattern p = Pattern.compile(impalaSqlExtractionPattern);
@@ -28,6 +34,11 @@ public class QueryAnalyzeUtil {
         }
     }
 
+    /**
+     * Get table name from full path.
+     * @param path The db.tablename format.
+     * @return Table name.
+     */
     public static String getTblName(String path) {
         if(path.contains(".")) {
             return path.split("\\.")[1];
@@ -36,6 +47,11 @@ public class QueryAnalyzeUtil {
         }
     }
 
+    /**
+     * Create metrics from CM API response.
+     * @param query ApiImpalaQuery from CM API.
+     * @return Query metrics.
+     */
     public static TaskMetrics collectMetricsFromQueryResponse(ApiImpalaQuery query) {
         String mem = query.getAttributes().get(MEMORY_PER_NODE_PEAK);
         BigDecimal durationMS = query.getDurationMillis();
