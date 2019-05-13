@@ -155,7 +155,6 @@ public class QueryBase {
             String withString = statement.replaceAll("insert\\s+(into|overwrite)\\s+" + tableName + "[\\d\\D]*", " ");
             String selectString = insertStmt.getQueryStmt().toSql();
 
-            System.out.println(withString + selectString);
             SqlScanner queryScanner = new SqlScanner(new StringReader(withString + selectString));
             SqlParser queryParser = new SqlParser(queryScanner);
             QueryStmt queryStmt = (QueryStmt) queryParser.parse().value;
