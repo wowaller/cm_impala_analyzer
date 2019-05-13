@@ -152,7 +152,7 @@ public class QueryBase {
 
 //            String withPattern = "(.*)insert\\s+(into|overwrite)\\s+" + tableName + ".*";
             // Extract String before insert.
-            String withString = statement.replaceAll("insert\\s+(into|overwrite)\\s+(table)?\\s+" + tableName + "[\\d\\D]*", " ");
+            String withString = statement.replaceAll("insert\\s+(into|overwrite)\\s+(table\\s+)?" + tableName + "[\\d\\D]*", " ");
             String selectString = insertStmt.getQueryStmt().toSql();
 
 //            System.out.println(withString + selectString);
