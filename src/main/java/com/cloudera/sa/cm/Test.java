@@ -2,7 +2,7 @@ package com.cloudera.sa.cm;
 
 public class Test {
     public static void main(String[] args) throws Exception {
-        String test = "with a0 as (select * from test),\r\n a1 as (select * from a0, test1)\r\ninsert  \r\n overwrite \r\n out.tts \r\n partition(OART,testr4=2) select * from a1";
+        String test = "insert into table test1\r\nselect 'test', a.*,\r\n(case when test is null then 1 else 0 end) ccc\r\nfrom\r\n(select * from test2\r\n) a";
         QueryBase node = new QueryBase(test, null);
         for(String source : node.getSource()) {
             System.out.println(source);
