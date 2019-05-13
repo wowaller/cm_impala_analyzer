@@ -13,6 +13,7 @@ import net.sf.jsqlparser.util.TablesNamesFinder;
 import org.apache.hadoop.hive.ql.lib.*;
 import org.apache.hadoop.hive.ql.parse.*;
 import org.apache.impala.analysis.*;
+import org.apache.impala.catalog.FeTable;
 import org.apache.impala.catalog.View;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -146,8 +147,13 @@ public class QueryBase {
             source.remove(target);
         } else if (stmt instanceof InsertStmt) {
             InsertStmt insertStmt = (InsertStmt) stmt;
-            target.add(insertStmt.getTargetTableName().toString());
-            parseImpalaQuery(insertStmt.getQueryStmt());
+            String tableName = insertStmt.getTargetTableName().toString();
+            target.add(tableName);
+            String queryString = statement.replaceAll("insert\\s+(into|overwrite)\\s+" + tableName, " ");
+            SqlScanner queryScanner = new SqlScanner(new StringReader(queryString));
+            SqlParser queryParser = new SqlParser(queryScanner);
+            QueryStmt queryStmt = (QueryStmt) queryParser.parse().value;
+            parseImpalaQuery(queryStmt);
         } else {
             // We do not really care about rest
         }
