@@ -149,8 +149,13 @@ public class QueryBase {
             InsertStmt insertStmt = (InsertStmt) stmt;
             String tableName = insertStmt.getTargetTableName().toString();
             target.add(tableName);
-            String withString = statement.replaceAll("insert\\s+(into|overwrite)\\s+" + tableName + ".*", " ");
+
+//            String withPattern = "(.*)insert\\s+(into|overwrite)\\s+" + tableName + ".*";
+            // Extract String before insert.
+            String withString = statement.replaceAll("insert\\s+(into|overwrite)\\s+" + tableName + "[\\d\\D]*", " ");
             String selectString = insertStmt.getQueryStmt().toSql();
+
+            System.out.println(withString + selectString);
             SqlScanner queryScanner = new SqlScanner(new StringReader(withString + selectString));
             SqlParser queryParser = new SqlParser(queryScanner);
             QueryStmt queryStmt = (QueryStmt) queryParser.parse().value;
