@@ -473,7 +473,7 @@ public class QueryAnalyzer {
         if(!queueSetting.isEmpty()) {
             Set<String> pools = task.getMetrics().getQueues();
             String largest = "";
-            double maxQueueResource = 0;
+            double maxQueueResource = -1;
 
             for(String pool : pools) {
                 double resource = queueSetting.get(pool);

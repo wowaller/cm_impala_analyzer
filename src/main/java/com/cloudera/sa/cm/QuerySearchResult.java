@@ -53,6 +53,9 @@ public class QuerySearchResult {
      * @throws ApiException
      */
     public ApiImpalaQuery nextQuery() throws ApiException {
+        if(currentItr == null) {
+            searchNextTime();
+        }
         if(currentItr.hasNext()) {
             return currentItr.next();
         } else {
@@ -134,7 +137,12 @@ public class QuerySearchResult {
         // Reset the offset as we are starting a new search.
         offset = 0;
         LOGGER.info("Start next query: " + offset + ", to=" + nextEnd);
-        return doSearch();
+        boolean hasNext = doSearch();
+        if(hasNext) {
+            return true;
+        } else {
+            return searchNextTime();
+        }
     }
 
     /**
