@@ -476,14 +476,19 @@ public class QueryAnalyzer {
             double maxQueueResource = -1;
 
             for(String pool : pools) {
-                double resource = queueSetting.get(pool);
-                if(resource > maxQueueResource) {
-                    largest = pool;
-                    maxQueueResource = resource;
+                if (queueSetting.containsKey(pool)) {
+                    double resource = queueSetting.get(pool);
+                    if (resource > maxQueueResource) {
+                        largest = pool;
+                        maxQueueResource = resource;
+                    }
                 }
             }
 
-            double utility = task.getMetrics().getMaxMemoryGb() / maxQueueResource * 100;
+            double utility = 0;
+            if(maxQueueResource > 0) {
+                utility = task.getMetrics().getMaxMemoryGb() / maxQueueResource * 100;
+            }
 
             String properPool = "Too large";
             double waste = Double.MAX_VALUE;

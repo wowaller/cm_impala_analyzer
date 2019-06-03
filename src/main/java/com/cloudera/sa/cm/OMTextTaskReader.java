@@ -24,17 +24,28 @@ public class OMTextTaskReader implements TaskReader {
     public static final String SKIP_INPUT_HEADER = "skip_header";
     public static final String DEFAULT_SKIP_INPUT_HEADER = "false";
 
+    public static final String JOB_ID = "omreader.job_id";
+    public static final String MODELLING_STATE = "omreader.state";
+    public static final String TARGET_DB = "omreader.target_db";
+    public static final String TARGET_TABLE = "omreader.output_tbl";
+    public static final String SOURCE_TABLE = "omreader.input_tbl";
+
     // Index of each column.
-    public static final int JOB_ID_INDEX = 3;
-    public static final int MODELLING_STATE_INDEX = 7;
-    public static final int TARGET_DB_NAME = 5;
-    public static final int TARGET_TABLE = 6;
-    public static final int SOURCE_TABLE = 15;
+    public static final int DEFAULT_JOB_ID_INDEX = 3;
+    public static final int DEFAULT_MODELLING_STATE_INDEX = 7;
+    public static final int DEFAULT_TARGET_DB_NAME = 5;
+    public static final int DEFAULT_TARGET_TABLE = 6;
+    public static final int DEFAULT_SOURCE_TABLE = 15;
 
     private Map<String, Set<String>> srcTbls;
     private Map<String, Set<String>> tarTbls;
     private Iterator<String> keyItr;
     private String current;
+    private int jobIdIndex;
+    private int modellingStateIndex;
+    private int targetDbIndex;
+    private int targetTblIndex;
+    private int sourceTblIndex;
 
     public OMTextTaskReader() {
         this.srcTbls = new HashMap<>();
@@ -52,6 +63,12 @@ public class OMTextTaskReader implements TaskReader {
 
         BufferedReader reader = new BufferedReader(new FileReader(input));
         boolean skipHeader = Boolean.parseBoolean(props.getProperty(SKIP_INPUT_HEADER, DEFAULT_SKIP_INPUT_HEADER));
+
+        jobIdIndex = Integer.valueOf(props.getProperty(JOB_ID, String.valueOf(DEFAULT_JOB_ID_INDEX)));
+        modellingStateIndex = Integer.valueOf(props.getProperty(MODELLING_STATE, String.valueOf(DEFAULT_MODELLING_STATE_INDEX)));
+        targetDbIndex = Integer.valueOf(props.getProperty(TARGET_DB, String.valueOf(DEFAULT_TARGET_DB_NAME)));
+        targetTblIndex = Integer.valueOf(props.getProperty(TARGET_TABLE, String.valueOf(DEFAULT_TARGET_TABLE)));
+        sourceTblIndex = Integer.valueOf(props.getProperty(SOURCE_TABLE, String.valueOf(DEFAULT_SOURCE_TABLE)));
 
         String line;
         if(skipHeader) {
@@ -104,25 +121,25 @@ public class OMTextTaskReader implements TaskReader {
     private void parseLine(String line) {
         String[] split = line.split(DEFAULT_INPUT_SPLIT);
 
-        if(split.length < SOURCE_TABLE + 1) {
+        if(split.length < DEFAULT_SOURCE_TABLE + 1) {
             LOGGER.error("Error parsing line " + line);
             return;
         }
 
-        String id = split[JOB_ID_INDEX];
+        String id = split[jobIdIndex];
         LOGGER.info("Reading task: " + id);
-        String targetDB = split[TARGET_DB_NAME];
+        String targetDB = split[targetDbIndex];
 
         // Output table does not have DB information. So add DB name to the target table.
         // Remove all " in the original String
-        String targetString = validateTarget(split[TARGET_TABLE]);
+        String targetString = validateTarget(split[targetTblIndex]);
         String[] rawTarTbls = targetString.split(DEFAULT_EXCLUDE_TBL_LIST_DELIMITER);
         Set<String> targetTbls = new HashSet<>();
         for(String target : rawTarTbls) {
             targetTbls.add(targetDB + "." + target);
         }
 
-        String sourceString = validateSource(split[SOURCE_TABLE]);
+        String sourceString = validateSource(split[sourceTblIndex]);
         Set<String> sourceTbls = new HashSet<>(Arrays.asList(sourceString.split(DEFAULT_EXCLUDE_TBL_LIST_DELIMITER)));
 
         // Same id could have a log lines in OM input. So for target/source tables group by the ID.
@@ -147,10 +164,10 @@ public class OMTextTaskReader implements TaskReader {
     private String[] validateParse(String line) {
         String[] split = line.split(DEFAULT_INPUT_SPLIT);
 
-        if(split.length < SOURCE_TABLE + 1) {
+        if(split.length < DEFAULT_SOURCE_TABLE + 1) {
             LOGGER.error("Error parsing line " + line);
             return null;
-        } else if(!split[MODELLING_STATE_INDEX].equalsIgnoreCase("model_success")){
+        } else if(!split[modellingStateIndex].equalsIgnoreCase("model_success")){
             LOGGER.error("Task failed in line " + line);
             return null;
         } else {
