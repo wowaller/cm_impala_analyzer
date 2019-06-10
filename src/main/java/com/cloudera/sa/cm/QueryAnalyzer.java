@@ -195,14 +195,26 @@ public class QueryAnalyzer {
                     if(LOGGER.isDebugEnabled()) {
                         LOGGER.debug("Target Tables====");
                     }
-                    for(String target : node.getTarget()) {
-                        if(LOGGER.isDebugEnabled()) {
-                            LOGGER.debug(target);
-                        }
-                        // Add queries to all target table.  Normally 1.
-                        if(!allQueries.containsKey(target)) {
-                            // We keep the latest SQL if duplicates found.
-                            allQueries.put(target, node);
+
+
+                    Set<String> source = node.getSource();
+                    // Only record queries if not all source tables should be excluded
+                    if (!QueryAnalyzeUtil.allExclude(source, excludeKeys, excludeTbls)) {
+                        for(String target : node.getTarget()) {
+                            // Ignore exclude target
+                            if (QueryAnalyzeUtil.hasKeyWd(target, excludeKeys)) {
+                                continue;
+                            }
+
+                            if(LOGGER.isDebugEnabled()) {
+                                LOGGER.debug(target);
+                            }
+
+                            // Add queries to all target table.  Normally 1.
+                            if(!allQueries.containsKey(target)) {
+                                // We keep the latest SQL if duplicates found.
+                                allQueries.put(target, node);
+                            }
                         }
                     }
                 }

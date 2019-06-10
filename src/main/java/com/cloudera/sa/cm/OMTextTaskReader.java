@@ -19,6 +19,7 @@ public class OMTextTaskReader implements TaskReader {
     // Delimiter for target/spurce tables.
     public static final String DEFAULT_EXCLUDE_TBL_LIST_DELIMITER = ",";
     // Delimiter for each column.
+    public static final String INPUT_SPLIT = "omreader.split_deli";
     public static final String DEFAULT_INPUT_SPLIT = "\t";
     // If the input OM file has the header.
     public static final String SKIP_INPUT_HEADER = "skip_header";

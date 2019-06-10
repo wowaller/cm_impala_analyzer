@@ -4,6 +4,8 @@ import com.cloudera.api.swagger.model.ApiImpalaQuery;
 import com.cloudera.api.swagger.model.ApiImpalaQueryDetailsResponse;
 
 import java.math.BigDecimal;
+import java.util.HashSet;
+import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -45,6 +47,38 @@ public class QueryAnalyzeUtil {
         } else {
             return path;
         }
+    }
+
+    /**
+     * Is the all tables contain key words.
+     * @param tbls The set tables.
+     * @param excludeKey Keys to match.
+     * @return True if the table has the key information.
+     */
+    public static boolean allExclude(Set<String> tbls, Set<String> excludeKey, Set<String> excludeTbls) {
+        Set<String> tblsNotExclude = new HashSet<>(tbls);
+        tblsNotExclude.removeAll(excludeTbls);
+        for(String tbl : tblsNotExclude) {
+            if(!hasKeyWd(tbl, excludeKey)) {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    /**
+     * Is the table name contain key words.
+     * @param tbl The table.
+     * @param excludeKey Keys to match.
+     * @return True if the table has the key information.
+     */
+    public static boolean hasKeyWd(String tbl, Set<String> excludeKey) {
+        for(String key : excludeKey) {
+            if(tbl.contains(key)) {
+                return true;
+            }
+        }
+        return false;
     }
 
     /**
