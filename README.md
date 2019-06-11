@@ -39,6 +39,16 @@ Using run.sh script to launch the job.
 * filter: Filter to apply on search. Recommend only get finished jobs with a select statement like (queryState=FINISHED and (queryType = DDL or queryType = DML) and statement RLIKE ".\*select.\*")
 * excludeKeyWords: List of key words delimitered by "," to ignore as source table. Sample: __m1903,__m1902
 * excludeTbls: List of tables delimitered by "," to ignore as source table. Sample: public_base.pm00_base_operator,public_base.pm00_base_country
+#### Readers
+There are reader interface you may want to use for different input.
+* OMTextTaskReader: "\t" delimitered text input. Normally exported from OM. Following configuration is the index of the column in the file (counting from 0).
+    *     omreader.job_id: Index of job id. Default 3 (4th column in the file).
+          omreader.target_db: Index of output database name id. Default 7 (8th column in the file).
+          omreader.output_tbl: Index of output table list. Default 6 (7th column in the file). 
+          omreader.input_tbl:  Index of input table list. Default 15 (16th column in the file). 
+* DefaultTaskReader: Fixed text input as 
+    * Format: ID \t target_table1,target_table2,... \t source_table1,source_table2,...
+
 
 ### Sample job input file
 For now, two kinds of reader provided as 
